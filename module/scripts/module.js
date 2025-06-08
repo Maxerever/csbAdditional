@@ -1,5 +1,5 @@
 ﻿Hooks.once("init", () => {
-    game.gmDamageHandler = {
+    game.csbAadditional = {
         attack: async () => {
             const actor = canvas.tokens.controlled[0]?.actor;
             if (!actor) return ui.notifications.warn("Выберите атакующего персонажа");
