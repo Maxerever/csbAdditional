@@ -8,22 +8,26 @@ jobs:
   upload-release-assets:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build ZIP archive
+      - name: Create ZIP archive
         run: zip -r csbAdditional.zip module.json module
 
-      - name: Upload assets to release
+      - name: Upload module.json asset
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./module.json
           asset_name: module.json
           asset_content_type: application/json
 
-      - name: Upload ZIP asset to release
+      - name: Upload ZIP asset
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./csbAdditional.zip
