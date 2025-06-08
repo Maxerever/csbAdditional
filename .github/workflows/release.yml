@@ -1,0 +1,32 @@
+name: Release with module.json and zip
+
+on:
+  push:
+    tags:
+      - 'v*'  # например, v1.0.0
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Создать zip-архив
+        run: |
+          mkdir release
+          cp module.json release/
+          cp -r module release/module
+          cd release
+          zip -r ../csbAdditional.zip module.json module
+        shell: bash
+
+      - name: Создать релиз
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            module.json
+            csbAdditional.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
