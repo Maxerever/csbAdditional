@@ -1,31 +1,31 @@
-name: Release with module.json and zip
+name: Upload assets on release
 
 on:
   release:
     types: [published]
 
 jobs:
-  release:
+  upload-release-assets:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Создать zip-архив
-        run: |
-          mkdir release
-          cp module.json release/
-          cp -r module release/module
-          cd release
-          zip -r ../csbAdditional.zip module.json module
-        shell: bash
+      - name: Build ZIP archive
+        run: zip -r csbAdditional.zip module.json module
 
-      - name: Создать релиз
-        uses: softprops/action-gh-release@v2
+      - name: Upload assets to release
+        uses: actions/upload-release-asset@v1
         with:
-          files: |
-            module.json
-            csbAdditional.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./module.json
+          asset_name: module.json
+          asset_content_type: application/json
+
+      - name: Upload ZIP asset to release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./csbAdditional.zip
+          asset_name: csbAdditional.zip
+          asset_content_type: application/zip
