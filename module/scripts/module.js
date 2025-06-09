@@ -7,16 +7,7 @@
             const target = Array.from(game.user.targets)[0]?.actor;
             if (!target) return ui.notifications.warn("Цель не выбрана");
 
-            const hitZones = {
-                "hp_head": -5, "hp_torso": 0, "hp_chest": -1, "hp_stomach": -2,
-                "hp_handLeft": -3, "hp_shoulderLeft": -3, "hp_elbowLeft": -6,
-                "hp_forearmLeft": -5, "hp_wristLeft": -7, "hp_handRight": -3,
-                "hp_shoulderRight": -3, "hp_elbowRight": -6, "hp_forearmRight": -5,
-                "hp_wristRight": -7, "hp_legLeft": -3, "hp_thighLeft": -4,
-                "hp_kneeLeft": -6, "hp_shinLeft": -5, "hp_footLeft": -7,
-                "hp_legRight": -3, "hp_thighRight": -4, "hp_kneeRight": -6,
-                "hp_shinRight": -5, "hp_footRight": -7
-            };
+
 
             let html = `<form><div class="form-group"><label>Часть тела:</label><select name="zone">`;
             for (const [zone, penalty] of Object.entries(hitZones)) {
@@ -281,3 +272,14 @@ const newRows = [
     { fullBody: "all", partBody: "down", parts: "rightshin", percent: 0.1, hp_percent: fullHp * 0.1, condition: "normal" },
     { fullBody: "all", partBody: "foots", parts: "rightFoot", percent: 0.05, hp_percent: fullHp * 0.05, condition: "normal" }
 ];
+
+const hitZones = {
+    "hp_head": -5, "hp_torso": 0, "hp_chest": -1, "hp_stomach": -2,
+    "hp_handLeft": -3, "hp_shoulderLeft": -3, "hp_elbowLeft": -6,
+    "hp_forearmLeft": -5, "hp_wristLeft": -7, "hp_handRight": -3,
+    "hp_shoulderRight": -3, "hp_elbowRight": -6, "hp_forearmRight": -5,
+    "hp_wristRight": -7, "hp_legLeft": -3, "hp_thighLeft": -4,
+    "hp_kneeLeft": -6, "hp_shinLeft": -5, "hp_footLeft": -7,
+    "hp_legRight": -3, "hp_thighRight": -4, "hp_kneeRight": -6,
+    "hp_shinRight": -5, "hp_footRight": -7
+};
