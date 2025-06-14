@@ -3,7 +3,9 @@
   "title": "Помощь Кириллиусу Нозиллиусу",
   "description": "Заебок",
   "version": "2.0",
-  "author": "Крестьянин обыкновенный",
+  "authors": [
+"Крестьянин обыкновенный"
+  ],
   "minimumCoreVersion": "12",
   "compatibleCoreVersion": "12",
   "scripts": [
