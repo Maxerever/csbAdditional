@@ -33,47 +33,43 @@ Hooks.once("init", () => {
             const target = Array.from(game.user.targets)[0]?.actor;
             if (!target) return ui.notifications.warn("Цель не выбрана");
 
-            // Типы урона
             const damageTypes = {
                 slashing: "Рубящий",
                 piercing: "Колющий",
                 bludgeoning: "Дробящий"
             };
-            
-            const hitZones = {
-    "head": -5, "torso": 0, "chest": -1, "stomach": -2,
-    "leftHand": -3, "leftShoulder": -3, "leftElbow": -6,
-    "leftForearm": -5, "leftWrist": -7, "rightHand": -3,
-    "rightShoulder": -3, "rightElbow": -6, "rightForearm": -5,
-    "rightWrist": -7, "leftLeg": -3, "leftThigh": -4,
-    "leftKnee": -6, "leftShin": -5, "leftFoot": -7,
-    "rightLeg": -3, "rightThigh": -4, "rightKnee": -6,
-    "rightShin": -5, "rightFoot": -7
-};
 
-            // Формируем HTML для диалога
-            let html = `<form>
-<div class="form-group">`;
-            html += `<label>Атакующий: ${actor.name}</label`;
-            html += `<label>Часть тела:</label>
-            <select name="zone">`;
+            const hitZones = {
+                head: -5, torso: 0, chest: -1, stomach: -2,
+                leftHand: -3, leftShoulder: -3, leftElbow: -6,
+                leftForearm: -5, leftWrist: -7, rightHand: -3,
+                rightShoulder: -3, rightElbow: -6, rightForearm: -5,
+                rightWrist: -7, leftLeg: -3, leftThigh: -4,
+                leftKnee: -6, leftShin: -5, leftFoot: -7,
+                rightLeg: -3, rightThigh: -4, rightKnee: -6,
+                rightShin: -5, rightFoot: -7
+            };
+
+            let html = `<form><div class="form-group">
+                <label>Атакующий: ${actor.name}</label>
+                <label>Часть тела:</label>
+                <select name="zone">`;
             for (const [zone, penalty] of Object.entries(hitZones)) {
                 const label = translations[zone] || zone;
                 html += `<option value="${zone}">${label} (Штраф: ${penalty})</option>`;
             }
             html += `</select></div>
-        <div class="form-group">
-            <label>Тип урона:</label>
-            <select name="damageType">`;
+                <div class="form-group">
+                <label>Тип урона:</label>
+                <select name="damageType">`;
             for (const [type, label] of Object.entries(damageTypes)) {
                 html += `<option value="${type}">${label}</option>`;
             }
             html += `</select></div>
-        <div class="form-group">
-            <label>Урон:</label>
-            <input type="text" name="damage" value="${damage}" pattern="^\\d+d\\d+(\\+\\d+)?$" title="Например: 2d6+3" />
-        </div>
-    </form>`;
+                <div class="form-group">
+                <label>Урон:</label>
+                <input type="text" name="damage" value="${damage}" pattern="^\\d+d\\d+(\\+\\d+)?$" title="Например: 2d6+3" />
+                </div></form>`;
 
             let zone, damageType, damageFormula;
             try {
@@ -91,27 +87,30 @@ Hooks.once("init", () => {
                 return;
             }
 
+            if (!damageFormula.match(/^\d+d\d+(\+\d+)?$/)) {
+                return ui.notifications.warn("Некорректная формула урона");
+            }
+
             const zoneLabel = translations[zone] || zone;
             const penalty = Number(hitZones[zone] ?? 0);
 
-            const attackRoll = new Roll("1d20");
-            await attackRoll.evaluate();
-            await attackRoll.toMessage({
+            const damageRoll = new Roll(damageFormula);
+            await damageRoll.evaluate({ async: true });
+
+            await damageRoll.toMessage({
                 flavor: `🎯 <b>${actor.name}</b> атакует <b>${target.name}</b> по: <b>${zoneLabel}</b> (нужно ≤ навык + ${penalty})`,
-                    flags: {
-                        "csbAdditional_damageData": {
-                            attackerName: actor.name,
-                            targetActorId: target.id,
-                            zone: zone,
-                            zoneLabel: zoneLabel,
-                            damage: damageRoll.total,
-                            damageType: damageType,
-                            damageFormula: damageFormula
+                flags: {
+                    "csbAdditional_damageData": {
+                        attackerName: actor.name,
+                        targetActorId: target.id,
+                        zone: zone,
+                        zoneLabel: zoneLabel,
+                        damage: damageRoll.total,
+                        damageType: damageType,
+                        damageFormula: damageFormula
                     }
                 }
             });
-
-
         },
         createBody: async () => {
 
@@ -235,55 +234,65 @@ Hooks.once("init", () => {
     };
 });
 
-                    "csbAdditional_damageData": {
-                        attackerName: actor.name,
-                        targetActorId: target.id,
-                        zone: zone,
-                        zoneLabel: zoneLabel,
-                        damage: damageRoll.total,
-                        damageType: damageType,
-                        damageFormula: damageFormula
 
-Hooks.on("createChatMessage", async (message) => {
-    if (!message.getFlag("cabAdditional_damageData")) return;
-    if (!game.user.isGM) return;
+Hooks.on("renderChatMessage", (message, html, data) => {
+  const damageData = message.getFlag("cabAdditional_applyDamage");
+  if (!damageData) return;
 
-    const data = message.getFlag("cabAdditional_damageData");
-    const target = game.actors.get(data.targetActorId);
-    if (!target) return;
+  if (!game.user.isGM) {
+    html.find(".apply-damage-button").remove();
+    return;
+  }
 
-    const zone = data.zone;
-    const damage = data.damage;
+  html.find(".apply-damage-button").on("click", async () => {
+    const actor = game.actors.get(damageData.actorId);
+    if (!actor) return;
 
-    const damageRoll = new Roll(damageFormula);
-    await damageRoll.evaluate();
-    await damageRoll.toMessage({
-        flavor: `💥 <b>${actor.name}</b> пытается нанести <b>${damageRoll.total}</b> ${damageTypes[damageType]} урона по <b>${zoneLabel}</b> (<b>${target.name}</b>)`,
-        whisper: ChatMessage.getWhisperRecipients("GM")
+    const damage = damageData.amount;
+    const zone = damageData.zone;
+    const zoneLabel = damageData.zoneLabel;
+    const damageType = damageData.damageType;
+
+    const system = actor.system;
+    const totalHP = Number(system.props.Life_Points_Total) || 0;
+    const positiveHP = Number(system.props.Life_Points_Positive) || 0;
+    const tableKey = "system_hp_dr";
+    const hpTable = system[tableKey] || {};
+    const part = Object.entries(hpTable).find(([key, row]) => row.parts === zone || row.column1 === zone);
+
+    const updatedTable = foundry.utils.deepClone(hpTable);
+    let partKey = null;
+    let partHP = 0;
+
+    if (part) {
+      [partKey, partHP] = part;
+      partHP = Number(part[1].hp_percent || 0);
+      updatedTable[partKey].hp_percent = Math.max(0, partHP - damage);
+    }
+
+    const newTotal = Math.max(0, totalHP - damage);
+    const newPositive = Math.max(0, positiveHP - damage);
+
+    await actor.update({
+      "system.props.Life_Points_Total": String(newTotal),
+      "system.props.Life_Points_Positive": String(newPositive),
+      [`system.${tableKey}`]: updatedTable
     });
-
-    const currentHP_part = Number(target.system.props?.[zone]) || 0;
-    const currentHP_main = Number(target.system.props?.Life_Points_Total) || 0;
-    const currentHP_positive = Number(target.system.props?.Life_Points_Positive) || 0;
-
-    const newHP_part = Math.max(0, currentHP_part - damage);
-    const newHP_main = Math.max(0, currentHP_main - damage);
-    const newHP_positive = Math.max(0, currentHP_positive - damage);
-
-    await target.update({
-        [`system.props.${zone}`]: newHP_part,
-        "system.props.Life_Points_Total": newHP_main,
-        "system.props.Life_Points_Positive": newHP_positive
-    });
-
-
-
 
     ChatMessage.create({
-        content: `<b>${data.attackerName}</b> попал по <b>${data.zoneLabel}</b> персонажа <b>${target.name}</b>
-         и нанёс <span style="color:darkred"><b>${data.damageType}</b><b>${damage}</b></span> урона.<br>❤️ HP: <b style="color:green">${newHP_main}</b>`
+      whisper: ChatMessage.getWhisperRecipients("GM"),
+      content: `
+        <b>${actor.name}</b> получил <b style="color:darkred">${damage}</b> <b>${damageType}</b> урона по <b>${zoneLabel}</b>.<br>
+        ❤️ Общее HP: <b style="color:green">${newTotal}</b><br>
+        💚 Положительное HP: <b style="color:green">${newPositive}</b><br>
+        🦴 Часть тела <b>${zoneLabel}</b>: <b style="color:red">${Math.max(0, partHP - damage)}</b> HP
+      `
     });
+
+    html.find(".apply-damage-button").prop("disabled", true).text("✅ Урон применён");
+  });
 });
+
 
 async function addRowsToDynamicTable(actor, tableKey, newRows) {
     // Путь к таблице в системе
