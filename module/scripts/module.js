@@ -94,24 +94,26 @@ Hooks.once("init", () => {
             const zoneLabel = translations[zone] || zone;
             const penalty = Number(hitZones[zone] ?? 0);
 
+            // 1) Бросок урона для отображения
             const damageRoll = new Roll(damageFormula);
             await damageRoll.evaluate({ async: true });
 
-            await damageRoll.toMessage({
-                flavor: `🎯 <b>${actor.name}</b> атакует <b>${target.name}</b> по: <b>${zoneLabel}</b> (нужно ≤ навык + ${penalty})`,
+            // 2) Сообщение с флагом исходных данных (чтобы потом создать сообщение с кнопкой)
+            await ChatMessage.create({
+                content: `<b>${actor.name}</b> атакует <b>${target.name}</b> по <b>${zoneLabel}</b> (нужно ≤ навык + ${penalty}).<br>
+                          Попытка урона: <b>${damageRoll.total}</b> (${damageType})<br><br>
+                          <button class="apply-damage-button">✅ Применить урон</button>`,
                 flags: {
-                    csbAadditional: {
-                        damageData: {
-                            attackerName: actor.name,
-                            targetActorId: target.id,
-                            zone: zone,
-                            zoneLabel: zoneLabel,
-                            damage: damageRoll.total,
-                            damageType: damageType,
-                            damageFormula: damageFormula
-                        }
+                    csbAdditional_applyDamage: {
+                        attackerName: actor.name,
+                        targetActorId: target.id,
+                        zone: zone,
+                        zoneLabel: zoneLabel,
+                        amount: damageRoll.total,
+                        damageType: damageType
                     }
-                }
+                },
+                whisper: ChatMessage.getWhisperRecipients("GM")
             });
         },
         createBody: async () => {
@@ -237,64 +239,63 @@ Hooks.once("init", () => {
 });
 
 
+// Обработка кнопки "Применить урон"
 Hooks.on("renderChatMessage", (message, html, data) => {
-const damageData = message.getFlag("csbAdditional", "damageData");
-if (!damageData) return;
+    const damageData = message.getFlag("csbAdditional_applyDamage");
+    if (!damageData) return;
 
-  if (!game.user.isGM) {
-    html.find(".apply-damage-button").remove();
-    return;
-  }
-
-  html.find(".apply-damage-button").on("click", async () => {
-    const actor = game.actors.get(damageData.actorId);
-    if (!actor) return;
-
-    const damage = damageData.amount;
-    const zone = damageData.zone;
-    const zoneLabel = damageData.zoneLabel;
-    const damageType = damageData.damageType;
-
-    const system = actor.system;
-    const totalHP = Number(system.props.Life_Points_Total) || 0;
-    const positiveHP = Number(system.props.Life_Points_Positive) || 0;
-    const tableKey = "system_hp_dr";
-    const hpTable = system[tableKey] || {};
-    const part = Object.entries(hpTable).find(([key, row]) => row.parts === zone || row.column1 === zone);
-
-    const updatedTable = foundry.utils.deepClone(hpTable);
-    let partKey = null;
-    let partHP = 0;
-
-    if (part) {
-      [partKey, partHP] = part;
-      partHP = Number(part[1].hp_percent || 0);
-      updatedTable[partKey].hp_percent = Math.max(0, partHP - damage);
+    if (!game.user.isGM) {
+        html.find(".apply-damage-button").remove();
+        return;
     }
 
-    const newTotal = Math.max(0, totalHP - damage);
-    const newPositive = Math.max(0, positiveHP - damage);
+    html.find(".apply-damage-button").on("click", async () => {
+        const actor = game.actors.get(damageData.targetActorId);
+        if (!actor) return;
 
-    await actor.update({
-      "system.props.Life_Points_Total": String(newTotal),
-      "system.props.Life_Points_Positive": String(newPositive),
-      [`system.${tableKey}`]: updatedTable
+        const zone = damageData.zone;
+        const damage = damageData.amount;
+
+        // Взял из твоего финального кода:
+        const system = actor.system;
+        const totalHP = Number(system.props.Life_Points_Total) || 0;
+        const positiveHP = Number(system.props.Life_Points_Positive) || 0;
+
+        const tableKey = "system_hp_dr";
+        const hpTable = system[tableKey] || {};
+
+        // Найдём нужную часть тела
+        const partEntry = Object.entries(hpTable).find(([key, row]) => row.parts === zone || row.column1 === zone);
+        const updatedTable = foundry.utils.deepClone(hpTable);
+
+        if (partEntry) {
+            const [partKey, partData] = partEntry;
+            const currentHp = Number(partData.hp_percent || 0);
+            updatedTable[partKey].hp_percent = Math.max(0, currentHp - damage);
+        }
+
+        // Обновляем общее и положительное HP
+        const newTotal = Math.max(0, totalHP - damage);
+        const newPositive = Math.max(0, positiveHP - damage);
+
+        await actor.update({
+            "system.props.Life_Points_Total": String(newTotal),
+            "system.props.Life_Points_Positive": String(newPositive),
+            [`system.${tableKey}`]: updatedTable
+        });
+
+        ChatMessage.create({
+            whisper: ChatMessage.getWhisperRecipients("GM"),
+            content: `<b>${actor.name}</b> получил <b style="color:darkred">${damage}</b> <b>${damageData.damageType}</b> урона по <b>${damageData.zoneLabel}</b>.<br>
+                      ❤️ Общее HP: <b style="color:green">${newTotal}</b><br>
+                      💚 Положительное HP: <b style="color:green">${newPositive}</b><br>
+                      🦴 Часть тела <b>${damageData.zoneLabel}</b>: <b style="color:red">${Math.max(0, (partEntry ? partEntry[1].hp_percent : 0) - damage)}</b>`
+        });
+
+        // Деактивируем кнопку, чтобы нельзя было повторно применить урон
+        html.find(".apply-damage-button").prop("disabled", true).text("✅ Урон применён");
     });
-
-    ChatMessage.create({
-      whisper: ChatMessage.getWhisperRecipients("GM"),
-      content: `
-        <b>${actor.name}</b> получил <b style="color:darkred">${damage}</b> <b>${damageType}</b> урона по <b>${zoneLabel}</b>.<br>
-        ❤️ Общее HP: <b style="color:green">${newTotal}</b><br>
-        💚 Положительное HP: <b style="color:green">${newPositive}</b><br>
-        🦴 Часть тела <b>${zoneLabel}</b>: <b style="color:red">${Math.max(0, partHP - damage)}</b> HP
-      `
-    });
-
-    html.find(".apply-damage-button").prop("disabled", true).text("✅ Урон применён");
-  });
 });
-
 
 async function addRowsToDynamicTable(actor, tableKey, newRows) {
     // Путь к таблице в системе
