@@ -4,7 +4,13 @@
   "description": "Заебок",
   "version": "2.0",
   "authors": [
-"Крестьянин обыкновенный"
+    {
+      "name": "Крестьянин обыкновенный",
+      "email": "none",
+      "url": "none",
+      "discord": "none",
+      "flags": {}
+    }
   ],
   "minimumCoreVersion": "12",
   "compatibleCoreVersion": "12",
