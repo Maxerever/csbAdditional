@@ -236,7 +236,7 @@ Hooks.once("init", () => {
 
 
 Hooks.on("renderChatMessage", (message, html, data) => {
-  const damageData = message.getFlag("cabAdditional_applyDamage");
+  const damageData = message.getFlag("cabAdditional_damageData");
   if (!damageData) return;
 
   if (!game.user.isGM) {
