@@ -100,14 +100,16 @@ Hooks.once("init", () => {
             await damageRoll.toMessage({
                 flavor: `🎯 <b>${actor.name}</b> атакует <b>${target.name}</b> по: <b>${zoneLabel}</b> (нужно ≤ навык + ${penalty})`,
                 flags: {
-                    "csbAdditional_damageData": {
-                        attackerName: actor.name,
-                        targetActorId: target.id,
-                        zone: zone,
-                        zoneLabel: zoneLabel,
-                        damage: damageRoll.total,
-                        damageType: damageType,
-                        damageFormula: damageFormula
+                    csbAadditional: {
+                        damageData: {
+                            attackerName: actor.name,
+                            targetActorId: target.id,
+                            zone: zone,
+                            zoneLabel: zoneLabel,
+                            damage: damageRoll.total,
+                            damageType: damageType,
+                            damageFormula: damageFormula
+                        }
                     }
                 }
             });
@@ -236,8 +238,8 @@ Hooks.once("init", () => {
 
 
 Hooks.on("renderChatMessage", (message, html, data) => {
-  const damageData = message.getFlag("csbAdditional_damageData");
-  if (!damageData) return;
+const damageData = message.getFlag("csbAdditional", "damageData");
+if (!damageData) return;
 
   if (!game.user.isGM) {
     html.find(".apply-damage-button").remove();
