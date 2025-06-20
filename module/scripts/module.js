@@ -104,16 +104,17 @@ Hooks.once("init", () => {
                           Попытка урона: <b>${damageRoll.total}</b> (${damageType})<br><br>
                           <button class="apply-damage-button">✅ Применить урон</button>`,
                 flags: {
-                    csbAdditional_applyDamage: {
-                        attackerName: actor.name,
-                        targetActorId: target.id,
-                        zone: zone,
-                        zoneLabel: zoneLabel,
-                        amount: damageRoll.total,
-                        damageType: damageType
+                    csbAdditional: {
+                        applyDamage: {
+                            attackerName: actor.name,
+                            targetActorId: target.id,
+                            zone: zone,
+                            zoneLabel: zoneLabel,
+                            amount: damageRoll.total,
+                            damageType: damageType
                     }
-                },
-                whisper: ChatMessage.getWhisperRecipients("GM")
+                    }
+                }
             });
         },
         createBody: async () => {
@@ -241,7 +242,7 @@ Hooks.once("init", () => {
 
 // Обработка кнопки "Применить урон"
 Hooks.on("renderChatMessage", (message, html, data) => {
-    const damageData = message.getFlag("csbAdditional_applyDamage");
+    const damageData = message.getFlag("csbAdditional","applyDamage");
     if (!damageData) return;
 
     if (!game.user.isGM) {
