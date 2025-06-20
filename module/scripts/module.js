@@ -104,7 +104,7 @@ Hooks.once("init", () => {
                           Попытка урона: <b>${damageRoll.total}</b> (${damageType})<br><br>
                           <button class="apply-damage-button">✅ Применить урон</button>`,
                 flags: {
-                    csbAdditional: {
+                    csbadditional: {
                         applyDamage: {
                             attackerName: actor.name,
                             targetActorId: target.id,
@@ -242,7 +242,7 @@ Hooks.once("init", () => {
 
 // Обработка кнопки "Применить урон"
 Hooks.on("renderChatMessage", (message, html, data) => {
-    const damageData = message.getFlag("csbAdditional","applyDamage");
+    const damageData = message.getFlag("csbadditional","applyDamage");
     if (!damageData) return;
 
     if (!game.user.isGM) {
