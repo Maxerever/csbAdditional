@@ -242,7 +242,7 @@ Hooks.once("init", () => {
 
 // Обработка кнопки "Применить урон"
 Hooks.on("renderChatMessage", (message, html, data) => {
-    const damageData = message.getFlag("csbadditional","applyDamage");
+    const damageData = message.getFlag("csbadditional", "applyDamage");
     if (!damageData) return;
 
     if (!game.user.isGM) {
@@ -257,43 +257,48 @@ Hooks.on("renderChatMessage", (message, html, data) => {
         const zone = damageData.zone;
         const damage = damageData.amount;
 
-        // Взял из твоего финального кода:
+        // Достаём данные из props
         const system = actor.system;
         const totalHP = Number(system.props.Life_Points_Total) || 0;
         const positiveHP = Number(system.props.Life_Points_Positive) || 0;
 
-        const tableKey = "system_hp_dr";
-        const hpTable = system[tableKey] || {};
-
-        // Найдём нужную часть тела
-        const partEntry = Object.entries(hpTable).find(([key, row]) => row.parts === zone || row.column1 === zone);
+        const tablePath = "system.props.system_hp_dr";
+        const hpTable = foundry.utils.getProperty(actor, tablePath) || {};
         const updatedTable = foundry.utils.deepClone(hpTable);
+console.log(hpTable);
+        // Находим нужную часть тела
+        const partEntry = Object.entries(hpTable).find(([_, row]) => row.parts === zone || row.column1 === zone);
+
+        let newHpPart = 0;
 
         if (partEntry) {
             const [partKey, partData] = partEntry;
             const currentHp = Number(partData.hp_percent || 0);
-            updatedTable[partKey].hp_percent = Math.max(0, currentHp - damage);
+            newHpPart = Math.max(0, currentHp - damage);
+            updatedTable[partKey].hp_percent = newHpPart;
         }
 
-        // Обновляем общее и положительное HP
+        // Вычисляем новое общее HP
         const newTotal = Math.max(0, totalHP - damage);
         const newPositive = Math.max(0, positiveHP - damage);
 
+        // Обновляем персонажа
         await actor.update({
             "system.props.Life_Points_Total": String(newTotal),
             "system.props.Life_Points_Positive": String(newPositive),
-            [`system.${tableKey}`]: updatedTable
+            [tablePath]: updatedTable
         });
 
         ChatMessage.create({
             whisper: ChatMessage.getWhisperRecipients("GM"),
-            content: `<b>${actor.name}</b> получил <b style="color:darkred">${damage}</b> <b>${damageData.damageType}</b> урона по <b>${damageData.zoneLabel}</b>.<br>
-                      ❤️ Общее HP: <b style="color:green">${newTotal}</b><br>
-                      💚 Положительное HP: <b style="color:green">${newPositive}</b><br>
-                      🦴 Часть тела <b>${damageData.zoneLabel}</b>: <b style="color:red">${Math.max(0, (partEntry ? partEntry[1].hp_percent : 0) - damage)}</b>`
+            content: `
+                <b>${actor.name}</b> получил <b style="color:darkred">${damage}</b> <b>${damageData.damageType}</b> урона по <b>${damageData.zoneLabel}</b>.<br>
+                ❤️ Общее HP: <b style="color:green">${newTotal}</b><br>
+                💚 Положительное HP: <b style="color:green">${newPositive}</b><br>
+                🦴 Часть тела <b>${damageData.zoneLabel}</b>: <b style="color:red">${newHpPart}</b> HP
+            `
         });
 
-        // Деактивируем кнопку, чтобы нельзя было повторно применить урон
         html.find(".apply-damage-button").prop("disabled", true).text("✅ Урон применён");
     });
 });
