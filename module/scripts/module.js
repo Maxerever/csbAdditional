@@ -76,6 +76,22 @@ Hooks.on("renderChatMessage", (message, html, data) => {
 
         const zone = damageData.zone;
         const damage = damageData.amount;
+        let finalDamage = damage;
+
+        let damageTypeLabel;
+        switch (damageData.damageType) {
+            case "slashing":
+            damageTypeLabel = "Рубящий";
+            break;
+        case "piercing":
+            damageTypeLabel = "Колющий";
+            break;
+        case "bludgeoning":
+            damageTypeLabel = "Дробящий";
+            break;
+        default:
+            damageTypeLabel = damageData.damageType; // запасной вариант
+        }
 
         // Достаём данные из props
         const system = actor.system;
@@ -94,28 +110,34 @@ console.log(hpTable);
         if (partEntry) {
             const [partKey, partData] = partEntry;
             const currentHp = Number(partData.hp_percent || 0);
-            newHpPart =  currentHp - damage;
+            const DR = Number(partData.DR || 0); // DR с заглавными буквами
+
+            switch (damageData.damageType) {
+                case "piercing": {
+                    const pierced = Math.max(0, finalDamage - DR);
+                    finalDamage = pierced + Math.ceil(pierced * 0.5); // +50%
+                    break;
+                }
+                case "bludgeoning": {
+                    const reducedDR = DR / 2;
+                    finalDamage = Math.max(0, finalDamage - reducedDR);
+                    break;
+                }
+                default:
+                    finalDamage = Math.max(0, finalDamage - DR);
+                    break;
+                }
+
+            newHpPart =  currentHp - finalDamage;
             updatedTable[partKey].hp_percent = newHpPart;
         }
 
-        let damageTypeLabel;
-        switch (damageData.damageType) {
-            case "slashing":
-            damageTypeLabel = "Рубящий";
-            break;
-        case "piercing":
-            damageTypeLabel = "Колющий";
-            break;
-        case "bludgeoning":
-            damageTypeLabel = "Дробящий";
-            break;
-        default:
-            damageTypeLabel = damageData.damageType; // запасной вариант
-        }
+
 
         // Вычисляем новое общее HP
-        const newTotal = totalHP - damage;
-        const newPositive = positiveHP - damage;
+        const newTotal = totalHP - finalDamage;
+        const newPositive = positiveHP - finalDamage;
+
 
         // Обновляем персонажа
         await actor.update({
@@ -235,17 +257,17 @@ console.log(hpTable);
 
             switch (damageData.damageType) {
                 case "piercing": {
-                    const pierced = Math.max(0, damage - DR);
+                    const pierced = Math.max(0, finalDamage - DR);
                     finalDamage = pierced + Math.ceil(pierced * 0.5); // +50%
                     break;
                 }
                 case "bludgeoning": {
                     const reducedDR = DR / 2;
-                    finalDamage = Math.max(0, damage - reducedDR);
+                    finalDamage = Math.max(0, finalDamage - reducedDR);
                     break;
                 }
                 default:
-                    finalDamage = Math.max(0, damage - DR);
+                    finalDamage = Math.max(0, finalDamage - DR);
                     break;
                 }
 
