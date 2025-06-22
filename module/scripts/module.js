@@ -154,7 +154,7 @@ console.log(hpTable);
             
             content: `
             ${portraitImg ? `<img src="${portraitImg}" alt="Portrait" style="width:50px; height:50px; border-radius:8px; margin-bottom:10px;">\n` : ""}
-                <b>${actor.name}</b> получил <b style="color:darkred">${damage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>.<br>
+                <b>${actor.name}</b> получил <b style="color:darkred">${finalDamage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>.<br>
                 ❤️ Общее HP: <b class="hide-hp" style="color:green">${newTotal}</b><br>
                 💚 Положительное HP: <b class="hide-hp" style="color:green">${newPositive}</b><br>
                 🦴 Часть тела <b>${damageData.zoneLabel}</b>: <b class="hide-hp" style="color:red">${newHpPart}</b> HP
@@ -174,6 +174,7 @@ console.log(hpTable);
         html.find(".apply-damage-button").prop("disabled", true).text("✅ Урон применён");
         html.find(".apply-critical-button").prop("disabled", true).text("✅ Урон применён");
         html.find(".apply-reset-button").prop("disabled", false);
+        html.find(".apply-heal-button").prop("disabled", false).text("❤️ Исцелить");
     });
 
     html.find(".apply-critical-button").on("click", async () => {
@@ -212,7 +213,7 @@ console.log(hpTable);
     if (effect.modifier) {
         finalDamage *= effect.modifier;
     } else if (effect.type === "max" && damageData.originalFormula) {
-        const roll = await new Roll(originalFormula).roll();
+        const roll = await new Roll(damageData.originalFormula).roll();
         let rollResult = roll.total;
         finalDamage = roll.terms.reduce((sum, term) => {
         if (term.faces && term.number) return sum + term.number * term.faces;
@@ -298,7 +299,7 @@ console.log(hpTable);
             
             content: `
             ${portraitImg ? `<img src="${portraitImg}" alt="Portrait" style="width:50px; height:50px; border-radius:8px; margin-bottom:10px;">\n` : ""}
-                КРИТ: <b>${actor.name}</b> получил <b style="color:darkred">${damage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>.<br>
+                КРИТ: <b>${actor.name}</b> получил <b style="color:darkred">${finalDamage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>.<br>
                 ❤️ Общее HP: <b class="hide-hp" style="color:green">${newTotal}</b><br>
                 💚 Положительное HP: <b class="hide-hp" style="color:green">${newPositive}</b><br>
                 🦴 Часть тела <b>${damageData.zoneLabel}</b>: <b class="hide-hp" style="color:red">${newHpPart}</b> HP
@@ -318,6 +319,7 @@ console.log(hpTable);
         html.find(".apply-damage-button").prop("disabled", true).text("✅ Урон применён");
         html.find(".apply-critical-button").prop("disabled", true).text("✅ Урон применён");
         html.find(".apply-reset-button").prop("disabled", false);
+        html.find(".apply-heal-button").prop("disabled", false).text("❤️ Исцелить");
     });
 
     html.find(".apply-reset-button").on("click", async () => {
@@ -326,7 +328,7 @@ console.log(hpTable);
     if (!actor) return;
 
     const zone = damageData.zone;
-    let lastdamage = Number(damageData.damage);
+    let lastdamage = Number(damageData.amount);
 
         // Достаём данные из props
         const system = actor.system;
@@ -361,7 +363,10 @@ console.log(hpTable);
             [tablePath]: updatedTable
         });
 
+        html.find(".apply-damage-button").prop("disabled", false).text("⚔️ Урон");
+        html.find(".apply-critical-button").prop("disabled", false).text("🔥 Крит");
         html.find(".apply-reset-button").prop("disabled", true).text("✅ Урон отменён");
+        html.find(".apply-heal-button").prop("disabled", false).text("❤️ Исцелить");
     });
 
     html.find(".apply-heal-button").on("click", async () => {
@@ -371,6 +376,9 @@ console.log(hpTable);
 
         game.csbadditional.heal(actor);
 
+        html.find(".apply-damage-button").prop("disabled", false).text("⚔️ Урон");
+        html.find(".apply-critical-button").prop("disabled", false).text("🔥 Крит");
+        html.find(".apply-reset-button").prop("disabled", true).text("✅ Урон отменён");
         html.find(".apply-heal-button").prop("disabled", true).text("✅ Отхилен");
     });
 
@@ -516,18 +524,21 @@ async function Attack(currentDifficulty, actor, damage) {
                 <div class="form-group">
                 <label>Урон:</label>
                 <input type="text" name="damage" value="${damage}" pattern="^(\\d+d\\d+(\\+\\d+)?|\\d+)$" title="Например: 2d6+3" />
+                <label>Сложность:</label>
+                <input type="text" name="difficulty" value="${difficulty}" pattern="^([1-9]|[1-9][0-9])$" title="Например: 15" />
                 </div></form>`;
 
             let zone, damageType, damageFormula;
             try {
-                ({ zone, damageType, damage: damageFormula } = await Dialog.prompt({
+                ({ zone, damageType, damage: damageFormula, difficulty } = await Dialog.prompt({
                     title: "Выбор зоны и типа урона",
                     content: html,
                     label: "Атаковать",
                     callback: html => ({
                         zone: html.find("select[name='zone']").val(),
                         damageType: html.find("select[name='damageType']").val(),
-                        damage: html.find("input[name='damage']").val()
+                        damage: html.find("input[name='damage']").val(),
+                        difficulty: html.find().val("input[name='difficulty']")
                     })
                 }));
             } catch {
