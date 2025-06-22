@@ -515,7 +515,7 @@ async function Attack(difficulty, actor, damage) {
             html += `</select></div>
                 <div class="form-group">
                 <label>Урон:</label>
-                <input type="text" name="damage" value="${damage}" pattern="^(\d+d\d+(\+\d+)?|\d+)$" title="Например: 2d6+3" />
+                <input type="text" name="damage" value="${damage}" pattern="^(\\d+d\\d+(\\+\\d+)?|\\d+)$" title="Например: 2d6+3" />
                 </div></form>`;
 
             let zone, damageType, damageFormula;
@@ -563,7 +563,7 @@ async function Attack(difficulty, actor, damage) {
                 rollmessage = "Промах!";
             }
 
-                roll.toMessage({
+                damageRoll.toMessage({
                 speaker: ChatMessage.getSpeaker(),
                 flavor: " Бросок на попадание: " + rollmessage + "\n Сложность: " + {finalDifficulty}
             });
