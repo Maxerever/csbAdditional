@@ -32,7 +32,7 @@ const criticalEffects = {
     4: { label: "Урон по DR считается как 100%", note: "DR игнорируется, урон 100%." },
     5: { label: "Двойной шок при уроне сквозь DR", note: "При прохождении DR — двойной шок и травма части тела." },
     6: { label: "Обычный урон, цель роняет предметs", note: "Цель роняет всё, что держит." },
-    7: { label: "DR не защищает", note: "Цель теряет защиту от DR." },
+    7: { label: "DR не защищает", note: "Цель теряет защиту от DR.", type: "no_dr"},
     8: { label: "Обычный урон", modifier: 1 }
   };
 
@@ -110,7 +110,8 @@ console.log(hpTable);
         if (partEntry) {
             const [partKey, partData] = partEntry;
             const currentHp = Number(partData.hp_percent || 0);
-            const DR = Number(partData.DR || 0); // DR с заглавными буквами
+            const drKey = `dr_${zone}`;
+            const DR = Number(foundry.utils.getProperty(system.props, drKey) || 0);
 
             switch (damageData.damageType) {
                 case "piercing": {
@@ -119,7 +120,7 @@ console.log(hpTable);
                     break;
                 }
                 case "bludgeoning": {
-                    const reducedDR = DR / 2;
+                    const reducedDR = Math.round(DR / 2);
                     finalDamage = Math.max(0, finalDamage - reducedDR);
                     break;
                 }
@@ -171,10 +172,10 @@ console.log(hpTable);
                 }
         });
 
-        html.find(".apply-damage-button").prop("disabled", true).text("✅ Урон применён");
-        html.find(".apply-critical-button").prop("disabled", true).text("✅ Урон применён");
+        html.find(".apply-damage-button").prop("disabled", true).text("✅");
+        html.find(".apply-critical-button").prop("disabled", true).text("✅");
         html.find(".apply-reset-button").prop("disabled", false);
-        html.find(".apply-heal-button").prop("disabled", false).text("❤️ Исцелить");
+        html.find(".apply-heal-button").prop("disabled", false).text("❤️");
     });
 
     html.find(".apply-critical-button").on("click", async () => {
@@ -209,32 +210,45 @@ console.log(hpTable);
     let damage = Number(damageData.amount);
     let finalDamage = damage;
 
-    // Рассчёт модификации урона
-    if (effect.modifier) {
-        finalDamage *= effect.modifier;
-    } else if (effect.type === "max" && damageData.originalFormula) {
-        const roll = await new Roll(damageData.originalFormula).roll();
-        let rollResult = roll.total;
-        finalDamage = roll.terms.reduce((sum, term) => {
-        if (term.faces && term.number) return sum + term.number * term.faces;
-        if (typeof term === "number") return sum + term;
-        return sum;
-        }, 0);
-    }
+        // Рассчёт модификации урона
+        if (effect.modifier) {
+            finalDamage *= effect.modifier;
+        } else if (effect.type === "max" && damageData.originalFormula) {
+            const roll = new Roll(damageData.originalFormula);
+            let maxTotal = 0;
+
+            for (const term of roll.terms) {
+                if (term instanceof CONFIG.Dice.DiceTerm) {
+                    // Например, 2d6 → 2 * 6 = 12
+                    maxTotal += term.number * term.faces;
+                } else if (typeof term === "number") {
+                    maxTotal += term;
+                } else if (term?.operator === "+" || term?.operator === "-") {
+                    // Просто пропускаем операторы, они применятся сами по себе
+                    continue;
+                } else if (term instanceof foundry.dice.Terms.NumericTerm) {
+                    maxTotal += term.number;
+                }
+            }
+
+            finalDamage = maxTotal;
+        } else if (effect.type === "no_dr") {
+
+        }
 
         let damageTypeLabel;
         switch (damageData.damageType) {
             case "slashing":
-            damageTypeLabel = "Рубящий";
-            break;
-        case "piercing":
-            damageTypeLabel = "Колющий";
-            break;
-        case "bludgeoning":
-            damageTypeLabel = "Дробящий";
-            break;
-        default:
-            damageTypeLabel = damageData.damageType; // запасной вариант
+                damageTypeLabel = "Рубящий";
+                break;
+            case "piercing":
+                damageTypeLabel = "Колющий";
+                break;
+            case "bludgeoning":
+                damageTypeLabel = "Дробящий";
+                break;
+            default:
+                damageTypeLabel = damageData.damageType; // запасной вариант
         }
 
         // Достаём данные из props
@@ -254,7 +268,8 @@ console.log(hpTable);
         if (partEntry) {
             const [partKey, partData] = partEntry;
             const currentHp = Number(partData.hp_percent || 0);
-            const DR = Number(partData.DR || 0); // DR с заглавными буквами
+            const drKey = `dr_${zone}`;
+            const DR = Number(foundry.utils.getProperty(system.props, drKey) || 0);
 
             switch (damageData.damageType) {
                 case "piercing": {
@@ -316,10 +331,10 @@ console.log(hpTable);
                 }
         });
 
-        html.find(".apply-damage-button").prop("disabled", true).text("✅ Урон применён");
-        html.find(".apply-critical-button").prop("disabled", true).text("✅ Урон применён");
+        html.find(".apply-damage-button").prop("disabled", true).text("✅");
+        html.find(".apply-critical-button").prop("disabled", true).text("✅");
         html.find(".apply-reset-button").prop("disabled", false);
-        html.find(".apply-heal-button").prop("disabled", false).text("❤️ Исцелить");
+        html.find(".apply-heal-button").prop("disabled", false).text("❤️");
     });
 
     html.find(".apply-reset-button").on("click", async () => {
@@ -363,10 +378,10 @@ console.log(hpTable);
             [tablePath]: updatedTable
         });
 
-        html.find(".apply-damage-button").prop("disabled", false).text("⚔️ Урон");
-        html.find(".apply-critical-button").prop("disabled", false).text("🔥 Крит");
-        html.find(".apply-reset-button").prop("disabled", true).text("✅ Урон отменён");
-        html.find(".apply-heal-button").prop("disabled", false).text("❤️ Исцелить");
+        html.find(".apply-damage-button").prop("disabled", false).text("⚔️");
+        html.find(".apply-critical-button").prop("disabled", false).text("🔥");
+        html.find(".apply-reset-button").prop("disabled", true).text("✅");
+        html.find(".apply-heal-button").prop("disabled", false).text("❤️");
     });
 
     html.find(".apply-heal-button").on("click", async () => {
@@ -376,10 +391,10 @@ console.log(hpTable);
 
         game.csbadditional.heal(actor);
 
-        html.find(".apply-damage-button").prop("disabled", false).text("⚔️ Урон");
-        html.find(".apply-critical-button").prop("disabled", false).text("🔥 Крит");
-        html.find(".apply-reset-button").prop("disabled", true).text("✅ Урон отменён");
-        html.find(".apply-heal-button").prop("disabled", true).text("✅ Отхилен");
+        html.find(".apply-damage-button").prop("disabled", false).text("⚔️");
+        html.find(".apply-critical-button").prop("disabled", false).text("🔥");
+        html.find(".apply-reset-button").prop("disabled", true).text("✅");
+        html.find(".apply-heal-button").prop("disabled", true).text("✅");
     });
 
 });
@@ -586,14 +601,16 @@ async function Attack(currentDifficulty, actor, damage) {
             // 2) Сообщение с флагом исходных данных (чтобы потом создать сообщение с кнопкой)
             damageRoll.toMessage({
                 flavor: `
-                            ${rollmessage}\n
-                          <b>${actor.name}</b> атакует <b>${target.name}</b> по <b>${zoneLabel}</b> (нужно <= ${finalDifficulty}).<br>
-                          Попытка урона: <b>${damageRollResult}</b> (${damageFormula}) (${damageTypes[damageType]})<br><br>
-                          <button class="apply-damage-button">⚔️ Урон</button>
-                          <button class="apply-critical-button">🔥 Крит</button>
-                          <button class="apply-reset-button" disabled>🩹 Отмена</button>
-                          <button class="apply-heal-button">❤️ Исцелить</button>
-                          `,
+                    ${rollmessage}<br>
+                    <b>${actor.name}</b> атакует <b>${target.name}</b> по <b>${zoneLabel}</b> (нужно <= ${finalDifficulty}).<br>
+                    Попытка урона: <b>${damageRollResult}</b> (${damageFormula}) (${damageTypes[damageType]})<br><br>
+                    <div style="display: flex; gap: 5px; justify-content: center;">
+                        <button class="apply-damage-button" title="Урон" style="padding: 5px;">⚔️</button>
+                        <button class="apply-critical-button" title="Крит" style="padding: 5px;">🔥</button>
+                        <button class="apply-reset-button" disabled title="Отмена" style="padding: 5px;">🩹</button>
+                        <button class="apply-heal-button" title="Исцелить" style="padding: 5px;">❤️</button>
+                    </div>
+                `,
                 speaker: ChatMessage.getSpeaker(),
                 flags: {
                     csbadditional: {
@@ -653,5 +670,3 @@ async function CreateBody(actor) {
                 ui.notifications.info("Новые строки добавлены в dynamic_table");
 
 }
-
-
