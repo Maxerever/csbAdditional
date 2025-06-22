@@ -60,7 +60,7 @@ Hooks.once("init", () => {
 Hooks.on("renderChatMessage", (message, html, data) => {
     const damageData = message.getFlag("csbadditional", "applyDamage");
     const lastDamage = message.getFlag("csbadditional", "lastDamage");
-    if (!damageData || !lastDamage) return;
+    if (!damageData && !lastDamage) return;
 
     if (!game.user.isGM) {
         html.find(".apply-damage-button").remove();
@@ -483,7 +483,7 @@ async function Heal(actor) {
                 }
 }
 
-async function Attack(difficulty, actor, damage) {
+async function Attack(currentDifficulty, actor, damage) {
             if (!actor) return ui.notifications.warn("Выберите атакующего персонажа");
 
             const target = Array.from(game.user.targets)[0]?.actor;
@@ -495,7 +495,7 @@ async function Attack(difficulty, actor, damage) {
                 bludgeoning: "Дробящий"
             };
 
-
+            const difficulty = Number(currentDifficulty);
 
             let html = `<form><div class="form-group">
                 <label>Атакующий: ${actor.name}</label>
@@ -542,7 +542,7 @@ async function Attack(difficulty, actor, damage) {
             const damageRoll = await new Roll(damageFormula).roll();
             let rollResult = damageRoll.total;
             let rollmessage = "";
-            let finalDifficulty = difficulty + penalty;
+            let finalDifficulty = Math.difficulty + penalty;
             if (rollResult == 1) {
                 rollmessage = "Крит. попадание!"
                 const critRoll = await new Roll("1d8").roll();
@@ -565,7 +565,7 @@ async function Attack(difficulty, actor, damage) {
 
                 damageRoll.toMessage({
                 speaker: ChatMessage.getSpeaker(),
-                flavor: " Бросок на попадание: " + rollmessage + "\n Сложность: " + {finalDifficulty}
+                flavor: `Бросок на попадание: ${rollmessage}\nСложность: ${finalDifficulty}` 
             });
 
 
