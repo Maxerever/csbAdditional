@@ -1,4 +1,4 @@
-﻿const translations = {
+﻿const healTranslations = {
     head: "Голова",
     torso: "Торс",
     chest: "Грудь",
@@ -24,6 +24,47 @@
     rightShin: "Правая голень",
     rightFoot: "Правая стопа",
 };
+
+const translations = {
+    head: "Голове",
+    torso: "Торсу",
+    chest: "Груди",
+    stomach: "Животу",
+    leftHand: "Левой руке",
+    leftShoulder: "Левому плечу",
+    leftElbow: "Левому локтю",
+    leftForearm: "Левому предплечью",
+    leftWrist: "Левому запястью",
+    rightHand: "Правой руке",
+    rightShoulder: "Правому плечу",
+    rightElbow: "Правому локтю",
+    rightForearm: "Правому предплечью",
+    rightWrist: "Правому запястью",
+    leftLeg: "Левой ноге",
+    leftThigh: "Левому бедру",
+    leftKnee: "Левому колену",
+    leftShin: "Левой голени",
+    leftFoot: "Левой стопе",
+    rightLeg: "Правой ноге",
+    rightThigh: "Правому бедру",
+    rightKnee: "Правому колену",
+    rightShin: "Правая голени",
+    rightFoot: "Правой стопе",
+};
+
+const phrases =  [
+    "от",
+    "просто от неожиданного",
+    "пытаясь увернуться от",
+    "спасаясь бегством от сокрушительного",
+    "чрезмерно засмотревшись на бабочку рядом, не обращая внимания на",
+    "не успев заметить",
+    "пока был занят другими делами, полностью забыв про",
+    "метафорически ослепнув от красоты",
+    "решив, что справится с мощным",
+    "отдав свою судьбу на суд",
+    "досрочно задумав покинуть бренный мир с помощью"
+];
 
 const criticalEffects = {
     1: { label: "Урон ×3", modifier: 3 },
@@ -81,13 +122,13 @@ Hooks.on("renderChatMessage", (message, html, data) => {
         let damageTypeLabel;
         switch (damageData.damageType) {
             case "slashing":
-            damageTypeLabel = "Рубящий";
+            damageTypeLabel = "Рубящего";
             break;
         case "piercing":
-            damageTypeLabel = "Колющий";
+            damageTypeLabel = "Колющего";
             break;
         case "bludgeoning":
-            damageTypeLabel = "Дробящий";
+            damageTypeLabel = "Дробящего";
             break;
         default:
             damageTypeLabel = damageData.damageType; // запасной вариант
@@ -149,13 +190,13 @@ console.log(hpTable);
                     // Получаем портрет персонажа
                     const portraitImg = actor.img || "";
 
-
+        const phrase = getRandomPhrase(phrases);
         
         ChatMessage.create({
             
             content: `
-            ${portraitImg ? `<img src="${portraitImg}" alt="Portrait" style="width:50px; height:50px; border-radius:8px; margin-bottom:10px;">\n` : ""}
-                <b>${actor.name}</b> получил <b style="color:darkred">${finalDamage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>, пытаясь увернуться от <b>${damageData.weapon}</b>.<br>
+            ${portraitImg ? `<img src="${portraitImg}" alt="Portrait" style="width:50px; height:50px; border-radius:8px; margin-bottom:10px;">\n` : ""}<br>
+                <b>${actor.name}</b> получил <b style="color:darkred">${finalDamage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>, ${phrase} <b>${damageData.weapon}</b> персонажа <b>${damageData.attackerName}</b>.<br>
                 ❤️ Общее HP: <b class="hide-hp" style="color:green">${newTotal}</b><br>
                 💚 Положительное HP: <b class="hide-hp" style="color:green">${newPositive}</b><br>
                 🦴 Часть тела <b>${damageData.zoneLabel}</b>: <b class="hide-hp" style="color:red">${newHpPart}</b> HP
@@ -214,25 +255,30 @@ console.log(hpTable);
         if (effect.modifier) {
             finalDamage *= effect.modifier;
         } else if (effect.type === "max" && damageData.originalFormula) {
-            const roll = new Roll(damageData.originalFormula);
-            let maxTotal = 0;
+    const formula = damageData.originalFormula;
 
-            for (const term of roll.terms) {
-                if (term instanceof CONFIG.Dice.DiceTerm) {
-                    // Например, 2d6 → 2 * 6 = 12
-                    maxTotal += term.number * term.faces;
-                } else if (typeof term === "number") {
-                    maxTotal += term;
-                } else if (term?.operator === "+" || term?.operator === "-") {
-                    // Просто пропускаем операторы, они применятся сами по себе
-                    continue;
-                } else if (term instanceof foundry.dice.Terms.NumericTerm) {
-                    maxTotal += term.number;
-                }
-            }
+    let finalDamage = 0;
 
-            finalDamage = maxTotal;
-        } else if (effect.type === "no_dr") {
+    // Парсим формулу в Roll, но не бросаем
+    const roll = new Roll(formula);
+
+    // Перебираем термы (части формулы)
+    for (const term of roll.terms) {
+        // Если терм — кубик (имеет faces и number)
+        if (term.faces !== undefined && term.number !== undefined) {
+            finalDamage += term.faces * term.number; // Максимум кубиков (faces * число кубиков)
+        }
+        // Если терм — число (может быть положительным или отрицательным)
+        else if (typeof term === "number") {
+            finalDamage += term; // Просто прибавляем (учитывая знак)
+        }
+        // Если терм - функция (например "+", "-", но обычно Roll уже их учтёт в термах), пропускаем
+    }
+
+    // Теперь finalDamage — максимальный урон с учётом плюсов и минусов
+
+    // ... используем finalDamage дальше
+} else if (effect.type === "no_dr") {
 
         }
 
@@ -308,13 +354,13 @@ console.log(hpTable);
         const portraitImg = actor.img || "";
         const note = effect.note ? `<br><i>⚠ ${effect.note}</i>` : "";
 
-
+        const phrase = getRandomPhrase(phrases);
         
         ChatMessage.create({
             
             content: `
-            ${portraitImg ? `<img src="${portraitImg}" alt="Portrait" style="width:50px; height:50px; border-radius:8px; margin-bottom:10px;">\n` : ""}
-                КРИТ: <b>${actor.name}</b> получил <b style="color:darkred">${finalDamage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>, пытаясь увернуться от <b>${damageData.weapon}</b>.<br>
+            ${portraitImg ? `<img src="${portraitImg}" alt="Portrait" style="width:50px; height:50px; border-radius:8px; margin-bottom:10px;">\n` : ""}<br>
+                КРИТ: <b>${actor.name}</b> получил <b style="color:darkred">${finalDamage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>, ${phrase} <b>${damageData.weapon}</b> персонажа <b>${damageData.attackerName}</b>.<br>
                 ❤️ Общее HP: <b class="hide-hp" style="color:green">${newTotal}</b><br>
                 💚 Положительное HP: <b class="hide-hp" style="color:green">${newPositive}</b><br>
                 🦴 Часть тела <b>${damageData.zoneLabel}</b>: <b class="hide-hp" style="color:red">${newHpPart}</b> HP
@@ -475,7 +521,7 @@ async function Heal(actor) {
                         .filter(row => !row.$deleted)
                         .map(row => {
                             const key = row.parts || row.column1 || "Неизвестная часть";
-                            const name = translations[key] || key;
+                            const name = healTranslations[key] || key;
                             const hp = row.hp_percent ?? 0;
                             return `<li><b>${name}</b>: <span style="color: #28a745; font-weight: bold;">${hp}</span></li>`;
                         })
@@ -585,7 +631,7 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
             else if(rollResult == 20) {
                 rollmessage = "Крит. промах!"
             }
-            else if(rollResult < finalDifficulty) {
+            else if(rollResult <= finalDifficulty) {
                 rollmessage = "Попадание!";
             }
             else {
@@ -671,4 +717,9 @@ async function CreateBody(actor) {
 
                 ui.notifications.info("Новые строки добавлены в dynamic_table");
 
+}
+
+function getRandomPhrase(arr) {
+  const index = Math.floor(Math.random() * arr.length);
+  return arr[index];
 }
