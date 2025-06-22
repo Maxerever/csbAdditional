@@ -326,7 +326,7 @@ console.log(hpTable);
     if (!actor) return;
 
     const zone = damageData.zone;
-    let lastdamage = Number(lastDamage.damage);
+    let lastdamage = Number(damageData.damage);
 
         // Достаём данные из props
         const system = actor.system;
@@ -542,7 +542,7 @@ async function Attack(currentDifficulty, actor, damage) {
             const damageRoll = await new Roll(damageFormula).roll();
             let rollResult = damageRoll.total;
             let rollmessage = "";
-            let finalDifficulty = Math.difficulty + penalty;
+            let finalDifficulty = difficulty + penalty;
             if (rollResult == 1) {
                 rollmessage = "Крит. попадание!"
                 const critRoll = await new Roll("1d8").roll();
