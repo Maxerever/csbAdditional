@@ -538,7 +538,7 @@ async function Attack(currentDifficulty, actor, damage) {
                         zone: html.find("select[name='zone']").val(),
                         damageType: html.find("select[name='damageType']").val(),
                         damage: html.find("input[name='damage']").val(),
-                        difficulty: html.find().val("input[name='difficulty']")
+                        difficulty: html.find("input[name='difficulty']").val()
                     })
                 }));
             } catch {
@@ -609,6 +609,8 @@ async function Attack(currentDifficulty, actor, damage) {
                     }
                 }
             });
+            
+            console.log(zone, damageType, damageFormula, difficulty);
 }
 
 async function CreateBody(actor) {
