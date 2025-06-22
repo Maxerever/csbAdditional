@@ -503,7 +503,7 @@ async function Attack(currentDifficulty, actor, damage) {
                 bludgeoning: "Дробящий"
             };
 
-            const difficulty = Number(currentDifficulty);
+            let difficulty = Number(currentDifficulty);
 
             let html = `<form><div class="form-group">
                 <label>Атакующий: ${actor.name}</label>
@@ -538,7 +538,7 @@ async function Attack(currentDifficulty, actor, damage) {
                         zone: html.find("select[name='zone']").val(),
                         damageType: html.find("select[name='damageType']").val(),
                         damage: html.find("input[name='damage']").val(),
-                        difficulty: html.find("input[name='difficulty']").val()
+                        difficulty: Number(html.find("input[name='difficulty']").val())
                     })
                 }));
             } catch {
