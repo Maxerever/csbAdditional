@@ -259,11 +259,11 @@ console.log(hpTable);
             switch (damageData.damageType) {
                 case "piercing": {
                     const pierced = Math.max(0, finalDamage - DR);
-                    finalDamage = pierced + Math.ceil(pierced * 0.5); // +50%
+                    finalDamage = pierced + Math.round(pierced * 0.5); // +50%
                     break;
                 }
                 case "bludgeoning": {
-                    const reducedDR = DR / 2;
+                    const reducedDR = Math.round(DR / 2);
                     finalDamage = Math.max(0, finalDamage - reducedDR);
                     break;
                 }
@@ -555,7 +555,7 @@ async function Attack(currentDifficulty, actor, damage) {
             const damageRoll = await new Roll(damageFormula).roll();
             let damageRollResult = damageRoll.total;
             let rollmessage = "";
-            let finalDifficulty = difficulty + penalty;
+            let finalDifficulty = difficulty + penalty - Number(target.system.props.passiveDefence);
             if (rollResult == 1) {
                 rollmessage = "Крит. попадание!"
                 const critRoll = await new Roll("1d8").roll();
@@ -584,16 +584,17 @@ async function Attack(currentDifficulty, actor, damage) {
 
 
             // 2) Сообщение с флагом исходных данных (чтобы потом создать сообщение с кнопкой)
-            await ChatMessage.create({
-                content: `
-            ${rollmessage}\n
+            damageRoll.toMessage({
+                flavor: `
+                            ${rollmessage}\n
                           <b>${actor.name}</b> атакует <b>${target.name}</b> по <b>${zoneLabel}</b> (нужно <= ${finalDifficulty}).<br>
-                          Попытка урона: <b>${damageRollResult}</b> (${damageTypes[damageType]})<br><br>
+                          Попытка урона: <b>${damageRollResult}</b> (${damageFormula}) (${damageTypes[damageType]})<br><br>
                           <button class="apply-damage-button">⚔️ Урон</button>
                           <button class="apply-critical-button">🔥 Крит</button>
                           <button class="apply-reset-button" disabled>🩹 Отмена</button>
                           <button class="apply-heal-button">❤️ Исцелить</button>
                           `,
+                speaker: ChatMessage.getSpeaker(),
                 flags: {
                     csbadditional: {
                         applyDamage: {
@@ -610,7 +611,7 @@ async function Attack(currentDifficulty, actor, damage) {
                 }
             });
             
-            console.log(zone, damageType, damageFormula, difficulty);
+            console.log(zone, damageType, damageFormula, finalDifficulty);
 }
 
 async function CreateBody(actor) {
