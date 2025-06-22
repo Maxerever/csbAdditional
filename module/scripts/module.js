@@ -537,10 +537,12 @@ async function Attack(currentDifficulty, actor, damage) {
 
             const zoneLabel = translations[zone] || zone;
             const penalty = Number(hitZones[zone] ?? 0);
-
+            
+            const roll = await new Roll("1d20").roll();
+            let rollResult = roll.total;
             // 1) Бросок урона для отображения
             const damageRoll = await new Roll(damageFormula).roll();
-            let rollResult = damageRoll.total;
+            let damageRollResult = damageRoll.total;
             let rollmessage = "";
             let finalDifficulty = difficulty + penalty;
             if (rollResult == 1) {
@@ -563,10 +565,11 @@ async function Attack(currentDifficulty, actor, damage) {
                 rollmessage = "Промах!";
             }
 
-                damageRoll.toMessage({
+                roll.toMessage({
                 speaker: ChatMessage.getSpeaker(),
                 flavor: `Бросок на попадание: ${rollmessage}\nСложность: ${finalDifficulty}` 
             });
+            
 
 
             // 2) Сообщение с флагом исходных данных (чтобы потом создать сообщение с кнопкой)
@@ -574,7 +577,7 @@ async function Attack(currentDifficulty, actor, damage) {
                 content: `
             ${rollmessage}\n
                           <b>${actor.name}</b> атакует <b>${target.name}</b> по <b>${zoneLabel}</b> (нужно <= ${finalDifficulty}).<br>
-                          Попытка урона: <b>${rollResult}</b> (${damageType})<br><br>
+                          Попытка урона: <b>${damageRollResult}</b> (${damageTypes[damageType]})<br><br>
                           <button class="apply-damage-button">⚔️ Урон</button>
                           <button class="apply-critical-button">🔥 Крит</button>
                           <button class="apply-reset-button" disabled>🩹 Отмена</button>
