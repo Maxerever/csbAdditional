@@ -199,7 +199,7 @@ console.log(hpTable);
                 <b>${actor.name}</b> получил <b style="color:darkred">${finalDamage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>, ${phrase} <b>${damageData.weapon}</b> персонажа <b>${damageData.attackerName}</b>.<br>
                 ❤️ Общее HP: <b class="hide-hp" style="color:green">${newTotal}</b><br>
                 💚 Положительное HP: <b class="hide-hp" style="color:green">${newPositive}</b><br>
-                🦴 Часть тела <b>${damageData.zoneLabel}</b>: <b class="hide-hp" style="color:red">${newHpPart}</b> HP
+                🦴 Часть тела <b>${damageData.zoneLabelRaw}</b>: <b class="hide-hp" style="color:red">${newHpPart}</b> HP
             `,
                 flags: {
                     csbadditional: {
@@ -285,13 +285,13 @@ console.log(hpTable);
         let damageTypeLabel;
         switch (damageData.damageType) {
             case "slashing":
-                damageTypeLabel = "Рубящий";
+                damageTypeLabel = "Рубящего";
                 break;
             case "piercing":
-                damageTypeLabel = "Колющий";
+                damageTypeLabel = "Колющего";
                 break;
             case "bludgeoning":
-                damageTypeLabel = "Дробящий";
+                damageTypeLabel = "Дробящего";
                 break;
             default:
                 damageTypeLabel = damageData.damageType; // запасной вариант
@@ -363,7 +363,7 @@ console.log(hpTable);
                 КРИТ: <b>${actor.name}</b> получил <b style="color:darkred">${finalDamage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>, ${phrase} <b>${damageData.weapon}</b> персонажа <b>${damageData.attackerName}</b>.<br>
                 ❤️ Общее HP: <b class="hide-hp" style="color:green">${newTotal}</b><br>
                 💚 Положительное HP: <b class="hide-hp" style="color:green">${newPositive}</b><br>
-                🦴 Часть тела <b>${damageData.zoneLabel}</b>: <b class="hide-hp" style="color:red">${newHpPart}</b> HP
+                🦴 Часть тела <b>${damageData.zoneLabelRaw}</b>: <b class="hide-hp" style="color:red">${newHpPart}</b> HP
             `,
                 flags: {
                     csbadditional: {
@@ -568,15 +568,15 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
             const weapon = String(currentWeapon);
 
             let html = `<form><div class="form-group">
-                <label>Атакующий: ${actor.name}</label>
+                <label>Атакующий: ${actor.name}</label><br>
                 <label>Часть тела:</label>
                 <select name="zone">`;
             for (const [zone, penalty] of Object.entries(hitZones)) {
-                const label = translations[zone] || zone;
+                const label = healTranslations[zone] || zone;
                 html += `<option value="${zone}">${label} (Штраф: ${penalty})</option>`;
             }
-            html += `</select></div>
-                <div class="form-group">
+            html += `</select></div><br>
+                <div class="form-group" style="border:1px solid black; border-radius: 8px">
                 <label>Тип урона:</label>
                 <select name="damageType">`;
             for (const [type, label] of Object.entries(damageTypes)) {
@@ -585,7 +585,7 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
             html += `</select></div>
                 <div class="form-group">
                 <label>Урон:</label>
-                <input type="text" name="damage" value="${damage}" pattern="^(\\d+d\\d+(\\+\\d+)?|\\d+)$" title="Например: 2d6+3" />
+                <input type="text" name="damage" value="${damage}" pattern="^(\\d+d\\d+(\\+\\d+)?|\\d+)$" title="Например: 2d6+3" /><br>
                 <label>Сложность:</label>
                 <input type="text" name="difficulty" value="${difficulty}" pattern="^([1-9]|[1-9][0-9])$" title="Например: 15" />
                 </div></form>`;
@@ -609,6 +609,7 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
 
 
             const zoneLabel = translations[zone] || zone;
+            const zoneLabelRaw = healTranslations[zone] || zone;
             const penalty = Number(hitZones[zone] ?? 0);
             
             const roll = await new Roll("1d20").roll();
@@ -640,7 +641,7 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
 
                 roll.toMessage({
                 speaker: ChatMessage.getSpeaker(),
-                flavor: `Бросок на попадание: ${rollmessage}\nСложность: ${finalDifficulty}` 
+                flavor: `Бросок на попадание: <b>${rollmessage}</b><br>Сложность: <b>${finalDifficulty}</b>` 
             });
             
 
@@ -666,6 +667,7 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
                             targetActorId: target.id,
                             zone: zone,
                             zoneLabel: zoneLabel,
+                            zoneLabelRaw: zoneLabelRaw,
                             amount: damageRollResult,
                             damageType: damageType,
                             difficulty: finalDifficulty,
