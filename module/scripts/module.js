@@ -155,7 +155,7 @@ console.log(hpTable);
             
             content: `
             ${portraitImg ? `<img src="${portraitImg}" alt="Portrait" style="width:50px; height:50px; border-radius:8px; margin-bottom:10px;">\n` : ""}
-                <b>${actor.name}</b> получил <b style="color:darkred">${finalDamage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>.<br>
+                <b>${actor.name}</b> получил <b style="color:darkred">${finalDamage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>, пытаясь увернуться от <b>${damageData.weapon}</b>.<br>
                 ❤️ Общее HP: <b class="hide-hp" style="color:green">${newTotal}</b><br>
                 💚 Положительное HP: <b class="hide-hp" style="color:green">${newPositive}</b><br>
                 🦴 Часть тела <b>${damageData.zoneLabel}</b>: <b class="hide-hp" style="color:red">${newHpPart}</b> HP
@@ -314,7 +314,7 @@ console.log(hpTable);
             
             content: `
             ${portraitImg ? `<img src="${portraitImg}" alt="Portrait" style="width:50px; height:50px; border-radius:8px; margin-bottom:10px;">\n` : ""}
-                КРИТ: <b>${actor.name}</b> получил <b style="color:darkred">${finalDamage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>.<br>
+                КРИТ: <b>${actor.name}</b> получил <b style="color:darkred">${finalDamage}</b> <b>${damageTypeLabel}</b> урона по <b>${damageData.zoneLabel}</b>, пытаясь увернуться от <b>${damageData.weapon}</b>.<br>
                 ❤️ Общее HP: <b class="hide-hp" style="color:green">${newTotal}</b><br>
                 💚 Положительное HP: <b class="hide-hp" style="color:green">${newPositive}</b><br>
                 🦴 Часть тела <b>${damageData.zoneLabel}</b>: <b class="hide-hp" style="color:red">${newHpPart}</b> HP
@@ -506,7 +506,7 @@ async function Heal(actor) {
                 }
 }
 
-async function Attack(currentDifficulty, actor, damage) {
+async function Attack(currentDifficulty, actor, damage, currentWeapon) {
             if (!actor) return ui.notifications.warn("Выберите атакующего персонажа");
 
             const target = Array.from(game.user.targets)[0]?.actor;
@@ -519,6 +519,7 @@ async function Attack(currentDifficulty, actor, damage) {
             };
 
             let difficulty = Number(currentDifficulty);
+            const weapon = String(currentWeapon);
 
             let html = `<form><div class="form-group">
                 <label>Атакующий: ${actor.name}</label>
@@ -602,7 +603,7 @@ async function Attack(currentDifficulty, actor, damage) {
             damageRoll.toMessage({
                 flavor: `
                     ${rollmessage}<br>
-                    <b>${actor.name}</b> атакует <b>${target.name}</b> по <b>${zoneLabel}</b> (нужно <= ${finalDifficulty}).<br>
+                    <b>${actor.name}</b> атакует <b>${target.name}</b> по <b>${zoneLabel}</b> с помощью <b>${weapon}</b> (нужно <= ${finalDifficulty}).<br>
                     Попытка урона: <b>${damageRollResult}</b> (${damageFormula}) (${damageTypes[damageType]})<br><br>
                     <div style="display: flex; gap: 5px; justify-content: center;">
                         <button class="apply-damage-button" title="Урон" style="padding: 5px;">⚔️</button>
@@ -622,7 +623,8 @@ async function Attack(currentDifficulty, actor, damage) {
                             amount: damageRollResult,
                             damageType: damageType,
                             difficulty: finalDifficulty,
-                            originalFormula: damageFormula
+                            originalFormula: damageFormula,
+                            weapon: weapon
                     }
                     }
                 }
