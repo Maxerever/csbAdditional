@@ -590,7 +590,7 @@ async function Attack(currentDifficulty, actor, damage) {
                             targetActorId: target.id,
                             zone: zone,
                             zoneLabel: zoneLabel,
-                            amount: rollResult,
+                            amount: damageRollResult,
                             damageType: damageType,
                             difficulty: finalDifficulty,
                             originalFormula: damageFormula
