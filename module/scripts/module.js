@@ -572,9 +572,26 @@ async function Heal(actor) {
 async function Attack(currentDifficulty, actor, damage, currentWeapon) {
             if (!actor) return ui.notifications.warn("Выберите атакующего персонажа");
 
-            const token = Array.from(game.user.targets)[0]; 
-            const target = token.actor;
-            if (!target) return ui.notifications.warn("Цель не выбрана");
+const userTarget = Array.from(game.user.targets)[0];
+if (!userTarget) return ui.notifications.warn("Цель не выбрана");
+
+const token = userTarget.document; // TokenDocument
+if (!token) return ui.notifications.warn("Токен не найден");
+
+const target = token.actor;
+if (!target) return ui.notifications.warn("У токена нет актёра");
+
+let targetFlags;
+if (token.actorLink) {
+  // Токен связан — безопасно использовать actorId
+  targetFlags = { actorId: target.id };
+} else {
+  // Несвязанный токен — используем tokenId и sceneId
+  targetFlags = {
+    tokenId: token.id,
+    sceneId: token.parent?.id ?? canvas.scene?.id
+  };
+}
 
             console.log("Цель — токен:", target.name, target.actorLink ? "link" : "unlinked");
 
@@ -664,19 +681,6 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
                 flavor: `Бросок на попадание: <b>${rollmessage}</b><br>Сложность: <b>${Math.max(1, finalDifficulty)}</b>` 
             });
             
-
-
-            let targetFlags;
-            if (target.token.actorLink) {
-                // Токен связан — достаточно actorId
-                targetFlags = { actorId: target.id };
-            } else {
-                // Токен не связан — сохраняем sceneId и tokenId
-                targetFlags = {
-                tokenId: target.token.id,
-                sceneId: target.token.parent.id
-                };
-            }
 
             // 2) Сообщение с флагом исходных данных (чтобы потом создать сообщение с кнопкой)
             damageRoll.toMessage({
