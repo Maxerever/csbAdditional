@@ -565,7 +565,7 @@ async function Heal(actor) {
 async function Attack(currentDifficulty, actor, damage, currentWeapon) {
             if (!actor) return ui.notifications.warn("Выберите атакующего персонажа");
 
-            const target = Array.from(game.user.targets)[0];
+            const target = Array.from(game.user.targets)[0].actor;
             if (!target) return ui.notifications.warn("Цель не выбрана");
 
             console.log("Цель — токен:", target.name, target.actorLink ? "link" : "unlinked");
