@@ -113,10 +113,9 @@ Hooks.on("renderChatMessage", (message, html, data) => {
     }
 
     html.find(".apply-damage-button").on("click", async () => {
-const token = canvas.tokens.placeables.find(t => t.document.actorId === damageData.targetActorId);
-if (!token) return;
-const actor = token.actor;
-if (!actor) return;
+const scene = game.scenes.get(damageData.targetSceneId);
+const token = scene?.tokens.get(damageData.targetTokenId);
+const actor = token?.actor;
 
         const zone = damageData.zone;
         const damage = damageData.amount;
@@ -247,10 +246,9 @@ console.log(hpTable);
     }
 
     const effect = criticalEffects[selectedKey];
-const token = canvas.tokens.placeables.find(t => t.document.actorId === damageData.targetActorId);
-if (!token) return;
-const actor = token.actor;
-if (!actor) return;
+const scene = game.scenes.get(damageData.targetSceneId);
+const token = scene?.tokens.get(damageData.targetTokenId);
+const actor = token?.actor;
 
     const zone = damageData.zone;
     let damage = Number(damageData.amount);
@@ -390,10 +388,9 @@ console.log(hpTable);
 
     html.find(".apply-reset-button").on("click", async () => {
     
-const token = canvas.tokens.placeables.find(t => t.document.actorId === damageData.targetActorId);
-if (!token) return;
-const actor = token.actor;
-if (!actor) return;
+const scene = game.scenes.get(damageData.targetSceneId);
+const token = scene?.tokens.get(damageData.targetTokenId);
+const actor = token?.actor;
 
     const zone = damageData.zone;
     let lastdamage = Number(damageData.amount);
@@ -439,10 +436,9 @@ console.log(hpTable);
 
     html.find(".apply-heal-button").on("click", async () => {
     
-const token = canvas.tokens.placeables.find(t => t.document.actorId === damageData.targetActorId);
-if (!token) return;
-const actor = token.actor;
-if (!actor) return;
+const scene = game.scenes.get(damageData.targetSceneId);
+const token = scene?.tokens.get(damageData.targetTokenId);
+const actor = token?.actor;
 
         game.csbadditional.heal(actor);
 
@@ -564,7 +560,7 @@ async function Heal(actor) {
 async function Attack(currentDifficulty, actor, damage, currentWeapon) {
             if (!actor) return ui.notifications.warn("Выберите атакующего персонажа");
 
-            const target = Array.from(game.user.targets)[0].document;
+            const target = Array.from(game.user.targets)[0].token.actor;
             if (!target) return ui.notifications.warn("Цель не выбрана");
 
             console.log("Цель — токен:", target.name, target.actorLink ? "link" : "unlinked");
@@ -629,7 +625,7 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
             const damageRoll = await new Roll(damageFormula).roll();
             let damageRollResult = damageRoll.total;
             let rollmessage = "";
-            let finalDifficulty = difficulty + penalty - Number(target.actor.system.props.passiveDefence);
+            let finalDifficulty = difficulty + penalty - Number(target.system.props.passiveDefence);
             if (rollResult == 1) {
                 rollmessage = "Крит. попадание!"
                 const critRoll = await new Roll("1d8").roll();
@@ -675,7 +671,8 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
                     csbadditional: {
                         applyDamage: {
                             attackerName: actor.name,
-                            targetActorId: target.id,
+                            targetTokenId: target.id,
+                            targetSceneId: target.scene.id,
                             zone: zone,
                             zoneLabel: zoneLabel,
                             zoneLabelRaw: zoneLabelRaw,
