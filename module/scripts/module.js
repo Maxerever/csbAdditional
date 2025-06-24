@@ -114,14 +114,23 @@ Hooks.on("renderChatMessage", (message, html, data) => {
 
     html.find(".apply-damage-button").on("click", async () => {
 
-    const scene = game.scenes.get(damageData.sceneId);
-    if (!scene) return ui.notifications.error("Сцена не найдена");
+let actor;
 
-    const token = scene.tokens.get(damageData.tokenId);
-    if (!token) return ui.notifications.error("Токен не найден");
+if (damageData.actorId) {
+  // Связанный токен — получаем по ID актора
+  actor = game.actors.get(damageData.actorId);
+  if (!actor) return ui.notifications.error("Актёр не найден");
+} else {
+  // Несвязанный токен — получаем через сцену и токен
+  const scene = game.scenes.get(damageData.sceneId);
+  if (!scene) return ui.notifications.error("Сцена не найдена");
 
-    const actor = token.actor;
-    if (!actor) return ui.notifications.error("У токена нет актёра");
+  const token = scene.tokens.get(damageData.tokenId);
+  if (!token) return ui.notifications.error("Токен не найден");
+
+  actor = token.actor;
+  if (!actor) return ui.notifications.error("У токена нет актёра");
+}
 
         const zone = damageData.zone;
         const damage = damageData.amount;
@@ -657,6 +666,18 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
             
 
 
+            let targetFlags;
+            if (target.token.actorLink) {
+                // Токен связан — достаточно actorId
+                targetFlags = { actorId: target.id };
+            } else {
+                // Токен не связан — сохраняем sceneId и tokenId
+                targetFlags = {
+                tokenId: target.token.id,
+                sceneId: target.token.parent.id
+                };
+            }
+
             // 2) Сообщение с флагом исходных данных (чтобы потом создать сообщение с кнопкой)
             damageRoll.toMessage({
                 flavor: `
@@ -671,23 +692,22 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
                     </div>
                 `,
                 speaker: ChatMessage.getSpeaker(),
-                flags: {
-                    csbadditional: {
-                        applyDamage: {
-                            attackerName: actor.name,
-                            tokenId: target.token.id,           // ✅ сохраняем токен
-                            sceneId: target.token.parent.id,
-                            zone: zone,
-                            zoneLabel: zoneLabel,
-                            zoneLabelRaw: zoneLabelRaw,
-                            amount: damageRollResult,
-                            damageType: damageType,
-                            difficulty: finalDifficulty,
-                            originalFormula: damageFormula,
-                            weapon: weapon
-                    }
-                    }
-                }
+flags: {
+  csbadditional: {
+    applyDamage: {
+      ...targetFlags,
+      attackerName: actor.name,
+      zone,
+      zoneLabel,
+      zoneLabelRaw,
+      amount: damageRollResult,
+      damageType,
+      difficulty: finalDifficulty,
+      originalFormula: damageFormula,
+      weapon
+    }
+  }
+}
             });
             
             console.log(zone, damageType, damageFormula, finalDifficulty);
