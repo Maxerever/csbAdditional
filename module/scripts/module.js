@@ -668,7 +668,7 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
                     csbadditional: {
                         applyDamage: {
                             attackerName: actor.name,
-                            targetTokenId: target,
+                            target: target,
                             zone: zone,
                             zoneLabel: zoneLabel,
                             zoneLabelRaw: zoneLabelRaw,
