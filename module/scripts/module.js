@@ -573,13 +573,13 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
             if (!actor) return ui.notifications.warn("Выберите атакующего персонажа");
 
 const userTarget = Array.from(game.user.targets)[0];
-if (!userTarget) return ui.notifications.warn("Цель не выбрана");
+if (!userTarget) ui.notifications.warn("Цель не выбрана");
 
 const token = userTarget.token; // TokenDocument
-if (!token) return ui.notifications.warn("Токен не найден");
+if (!token) ui.notifications.warn("Токен не найден");
 
 const target = token.actor;
-if (!target) return ui.notifications.warn("У токена нет актёра");
+if (!target) ui.notifications.warn("У токена нет актёра");
 
 let targetFlags;
 if (token.actorLink) {
