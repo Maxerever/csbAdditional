@@ -113,8 +113,10 @@ Hooks.on("renderChatMessage", (message, html, data) => {
     }
 
     html.find(".apply-damage-button").on("click", async () => {
-        const actor = game.actors.get(damageData.targetActorId);
-        if (!actor) return;
+const token = canvas.tokens.placeables.find(t => t.document.actorId === damageData.targetActorId);
+if (!token) return;
+const actor = token.actor;
+if (!actor) return;
 
         const zone = damageData.zone;
         const damage = damageData.amount;
@@ -245,8 +247,10 @@ console.log(hpTable);
     }
 
     const effect = criticalEffects[selectedKey];
-    const actor = game.actors.get(damageData.targetActorId);
-    if (!actor) return;
+const token = canvas.tokens.placeables.find(t => t.document.actorId === damageData.targetActorId);
+if (!token) return;
+const actor = token.actor;
+if (!actor) return;
 
     const zone = damageData.zone;
     let damage = Number(damageData.amount);
@@ -386,8 +390,10 @@ console.log(hpTable);
 
     html.find(".apply-reset-button").on("click", async () => {
     
-    const actor = game.actors.get(damageData.targetActorId);
-    if (!actor) return;
+const token = canvas.tokens.placeables.find(t => t.document.actorId === damageData.targetActorId);
+if (!token) return;
+const actor = token.actor;
+if (!actor) return;
 
     const zone = damageData.zone;
     let lastdamage = Number(damageData.amount);
@@ -433,8 +439,10 @@ console.log(hpTable);
 
     html.find(".apply-heal-button").on("click", async () => {
     
-    const actor = game.actors.get(damageData.targetActorId);
-    if (!actor) return;
+const token = canvas.tokens.placeables.find(t => t.document.actorId === damageData.targetActorId);
+if (!token) return;
+const actor = token.actor;
+if (!actor) return;
 
         game.csbadditional.heal(actor);
 
@@ -556,8 +564,10 @@ async function Heal(actor) {
 async function Attack(currentDifficulty, actor, damage, currentWeapon) {
             if (!actor) return ui.notifications.warn("Выберите атакующего персонажа");
 
-            const target = Array.from(game.user.targets)[0]?.actor;
+            const target = Array.from(game.user.targets)[0].document;
             if (!target) return ui.notifications.warn("Цель не выбрана");
+
+            console.log("Цель — токен:", target.name, target.actorLink ? "link" : "unlinked");
 
             const damageTypes = {
                 slashing: "Рубящий",
