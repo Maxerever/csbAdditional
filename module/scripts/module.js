@@ -575,7 +575,7 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
 const userTarget = Array.from(game.user.targets)[0];
 if (!userTarget) ui.notifications.warn("Цель не выбрана");
 
-const token = userTarget.token; // TokenDocument
+const token = userTarget.document; // TokenDocument
 if (!token) ui.notifications.warn("Токен не найден");
 
 const target = token.actor;
