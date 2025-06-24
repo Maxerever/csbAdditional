@@ -114,8 +114,14 @@ Hooks.on("renderChatMessage", (message, html, data) => {
 
     html.find(".apply-damage-button").on("click", async () => {
 
-    const actor = game.actors.get(damageData.target._id);
-    if (!actor) return ui.notifications.error("Актёр у токена не найден");
+const scene = game.scenes.get(damageData.targetSceneId);
+if (!scene) return ui.notifications.error("Сцена не найдена");
+
+const tokenDoc = scene.tokens.get(damageData.targetTokenId);
+if (!tokenDoc) return ui.notifications.error("Токен не найден");
+
+const actor = tokenDoc.actor;
+if (!actor) return ui.notifications.error("У токена нет актёра");
 
         const zone = damageData.zone;
         const damage = damageData.amount;
@@ -668,7 +674,8 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
                     csbadditional: {
                         applyDamage: {
                             attackerName: actor.name,
-                            target: target,
+                            targetSceneId: canvas.scene.id,
+                            targetTokenId: target.id,
                             zone: zone,
                             zoneLabel: zoneLabel,
                             zoneLabelRaw: zoneLabelRaw,
