@@ -7,12 +7,12 @@
     leftShoulder: "Левое плечо",
     leftElbow: "Левый локоть",
     leftForearm: "Левое предплечье",
-    leftWrist: "Левое запястье",
+    leftWrist: "Левая кисть",
     rightHand: "Правая рука",
     rightShoulder: "Правое плечо",
     rightElbow: "Правый локоть",
     rightForearm: "Правое предплечье",
-    rightWrist: "Правое запястье",
+    rightWrist: "Правая кисть",
     leftLeg: "Левая нога",
     leftThigh: "Левое бедро",
     leftKnee: "Левое колено",
@@ -34,12 +34,12 @@ const translations = {
     leftShoulder: "Левому плечу",
     leftElbow: "Левому локтю",
     leftForearm: "Левому предплечью",
-    leftWrist: "Левому запястью",
+    leftWrist: "Левой кисти",
     rightHand: "Правой руке",
     rightShoulder: "Правому плечу",
     rightElbow: "Правому локтю",
     rightForearm: "Правому предплечью",
-    rightWrist: "Правому запястью",
+    rightWrist: "Правой кисти",
     leftLeg: "Левой ноге",
     leftThigh: "Левому бедру",
     leftKnee: "Левому колену",
@@ -113,9 +113,14 @@ Hooks.on("renderChatMessage", (message, html, data) => {
     }
 
     html.find(".apply-damage-button").on("click", async () => {
-const scene = game.scenes.get(damageData.targetSceneId);
-const token = scene?.tokens.get(damageData.targetTokenId);
-const actor = token?.actor;
+    const scene = game.scenes.get(damageData.targetSceneId);
+    if (!scene) return ui.notifications.error("Сцена цели не найдена");
+
+    const token = scene.tokens.get(damageData.targetTokenId);
+    if (!token) return ui.notifications.error("Токен цели не найден");
+
+    const actor = token.actor;
+    if (!actor) return ui.notifications.error("Актёр у токена не найден");
 
         const zone = damageData.zone;
         const damage = damageData.amount;
