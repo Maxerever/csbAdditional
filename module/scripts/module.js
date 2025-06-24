@@ -57,7 +57,7 @@ const phrases =  [
     "просто от неожиданного",
     "пытаясь увернуться от",
     "спасаясь бегством от сокрушительного",
-    "чрезмерно засмотревшись на бабочку рядом, не обращая внимания на",
+    "чрезмерно засмотревшись на бабочку, не обращая внимания на",
     "не успев заметить",
     "пока был занят другими делами, полностью забыв про",
     "метафорически ослепнув от красоты",
@@ -94,6 +94,7 @@ Hooks.once("init", () => {
     game.csbadditional.heal = Heal;
     game.csbadditional.attack = Attack;
     game.csbadditional.createBody = CreateBody;
+    game.csbadditional.throwDice = ThrowDice();
 });
 
 
@@ -587,7 +588,7 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
                 <label>Урон:</label>
                 <input type="text" name="damage" value="${damage}" pattern="^(\\d+d\\d+(\\+\\d+)?|\\d+)$" title="Например: 2d6+3" /><br>
                 <label>Сложность:</label>
-                <input type="text" name="difficulty" value="${difficulty}" pattern="^([1-9]|[1-9][0-9])$" title="Например: 15" />
+                <input type="text" name="difficulty" value="${Math.max(1, difficulty)}" pattern="^([1-9]|[1-9][0-9])$" title="Например: 15" />
                 </div></form>`;
 
             let zone, damageType, damageFormula;
@@ -641,7 +642,7 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
 
                 roll.toMessage({
                 speaker: ChatMessage.getSpeaker(),
-                flavor: `Бросок на попадание: <b>${rollmessage}</b><br>Сложность: <b>${finalDifficulty}</b>` 
+                flavor: `Бросок на попадание: <b>${rollmessage}</b><br>Сложность: <b>${Math.max(1, finalDifficulty)}</b>` 
             });
             
 
@@ -650,7 +651,7 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
             damageRoll.toMessage({
                 flavor: `
                     ${rollmessage}<br>
-                    <b>${actor.name}</b> атакует <b>${target.name}</b> по <b>${zoneLabel}</b> с помощью <b>${weapon}</b> (нужно <= ${finalDifficulty}).<br>
+                    <b>${actor.name}</b> атакует <b>${target.name}</b> по <b>${zoneLabel}</b> с помощью <b>${weapon}</b> (нужно <= ${Math.max(1,finalDifficulty)}).<br>
                     Попытка урона: <b>${damageRollResult}</b> (${damageFormula}) (${damageTypes[damageType]})<br><br>
                     <div style="display: flex; gap: 5px; justify-content: center;">
                         <button class="apply-damage-button" title="Урон" style="padding: 5px;">⚔️</button>
@@ -724,4 +725,94 @@ async function CreateBody(actor) {
 function getRandomPhrase(arr) {
   const index = Math.floor(Math.random() * arr.length);
   return arr[index];
+}
+
+
+async function ThrowDice(difficulty, item) {
+let modificator = 0;
+
+try {
+  const result = await Dialog.prompt({
+    title: "Проверка броска",
+    content: `
+<b>${item}</b><br><br>
+Сложность (ставить 0 если неизвестно):<br>
+<input type="number" name="difficulty" value="${difficulty}" /><br><br>
+
+Модификатор сложности:<br>
+<input type="number" name="modificator" value="0" /><br><br>
+
+Тип броска:<br>
+<label><input type="radio" name="mode" value="normal" checked /> Обычный</label><br>
+<label><input type="radio" name="mode" value="advantage" /> Преимущество</label><br>
+<label><input type="radio" name="mode" value="disadvantage" /> Помеха</label><br><br>
+
+Количество бросков:<br>
+<input type="number" name="count" value="1" min="1" />
+`,
+    label: "Бросить",
+    callback: html => {
+      return {
+        modificator: parseInt(html.find("input[name='modificator']").val() || 0),
+        difficulty: parseInt(html.find("input[name='difficulty']").val() || 0),
+        count: Math.max(1, parseInt(html.find("input[name='count']").val() || 1)),
+        mode: html.find("input[name='mode']:checked").val()
+      };
+    }
+  });
+  const isUnknownDifficulty = result.difficulty < 1;
+  modificator = result.modificator;
+  difficulty = result.difficulty;
+
+  const count = result.count;
+  const mode = result.mode;
+  let finalDiff = difficulty + modificator;
+let modeMessage = `<b>Обычный бросок</b>`;
+    let formula = "1d20";
+  if (mode === "advantage") {
+formula = "2d20kl";
+modeMessage = `<b style="color:darkgreen">Преимущество</b>`;
+}
+  else if (mode === "disadvantage") {
+formula = "2d20kh";
+modeMessage = `<b style="color:darkred">Помеха</b>`;
+}
+  for (let i = 0; i < count; i++) {
+    const roll = await new Roll(formula).roll();
+    const result = roll.total;
+
+    let message = "";
+    if (isUnknownDifficulty) {
+      finalDiff = "???";
+      message = "???";
+    } else {
+      if (result === 1) message = "Крит. успех!";
+      else if (result === 20) message = "Крит. неудача!";
+      else if (result <= finalDiff) message = "Успех!";
+      else message = "Неудача!";
+    }
+
+
+if (result.difficulty < 1) {
+finalDiff = "???";
+message = "???";
+}
+
+    await roll.toMessage({
+      speaker: ChatMessage.getSpeaker(),
+      flavor: `
+${modeMessage}<br>
+<b>${item}</b> (бросок ${i + 1})<br>
+Сложность: <b>${finalDiff}</b><br>
+Результат: <b>${message}</b>
+`.trim()
+    });
+  }
+
+} catch {
+  return;
+}
+
+
+
 }
