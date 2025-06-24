@@ -94,7 +94,7 @@ Hooks.once("init", () => {
     game.csbadditional.heal = Heal;
     game.csbadditional.attack = Attack;
     game.csbadditional.createBody = CreateBody;
-    game.csbadditional.throwDice = ThrowDice();
+    game.csbadditional.throwDice = ThrowDice;
 });
 
 
