@@ -113,13 +113,8 @@ Hooks.on("renderChatMessage", (message, html, data) => {
     }
 
     html.find(".apply-damage-button").on("click", async () => {
-    const scene = game.scenes.get(damageData.targetSceneId);
-    if (!scene) return ui.notifications.error("Сцена цели не найдена");
 
-    const token = scene.tokens.get(damageData.targetTokenId);
-    if (!token) return ui.notifications.error("Токен цели не найден");
-
-    const actor = token.actor;
+    const actor = damageData.target;
     if (!actor) return ui.notifications.error("Актёр у токена не найден");
 
         const zone = damageData.zone;
@@ -251,9 +246,8 @@ console.log(hpTable);
     }
 
     const effect = criticalEffects[selectedKey];
-const scene = game.scenes.get(damageData.targetSceneId);
-const token = scene?.tokens.get(damageData.targetTokenId);
-const actor = token?.actor;
+    const actor = damageData.target;
+    if (!actor) return ui.notifications.error("Актёр у токена не найден");
 
     const zone = damageData.zone;
     let damage = Number(damageData.amount);
@@ -393,9 +387,8 @@ console.log(hpTable);
 
     html.find(".apply-reset-button").on("click", async () => {
     
-const scene = game.scenes.get(damageData.targetSceneId);
-const token = scene?.tokens.get(damageData.targetTokenId);
-const actor = token?.actor;
+    const actor = damageData.target;
+    if (!actor) return ui.notifications.error("Актёр у токена не найден");
 
     const zone = damageData.zone;
     let lastdamage = Number(damageData.amount);
@@ -441,9 +434,8 @@ console.log(hpTable);
 
     html.find(".apply-heal-button").on("click", async () => {
     
-const scene = game.scenes.get(damageData.targetSceneId);
-const token = scene?.tokens.get(damageData.targetTokenId);
-const actor = token?.actor;
+    const actor = damageData.target;
+    if (!actor) return ui.notifications.error("Актёр у токена не найден");
 
         game.csbadditional.heal(actor);
 
@@ -676,8 +668,7 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
                     csbadditional: {
                         applyDamage: {
                             attackerName: actor.name,
-                            targetTokenId: target.id,
-                            targetSceneId: target.scene.id,
+                            targetTokenId: target,
                             zone: zone,
                             zoneLabel: zoneLabel,
                             zoneLabelRaw: zoneLabelRaw,
