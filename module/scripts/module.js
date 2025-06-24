@@ -629,7 +629,7 @@ async function Attack(currentDifficulty, actor, damage, currentWeapon) {
             const damageRoll = await new Roll(damageFormula).roll();
             let damageRollResult = damageRoll.total;
             let rollmessage = "";
-            let finalDifficulty = difficulty + penalty - Number(target.system.props.passiveDefence);
+            let finalDifficulty = difficulty + penalty - Number(target.actor.system.props.passiveDefence);
             if (rollResult == 1) {
                 rollmessage = "Крит. попадание!"
                 const critRoll = await new Roll("1d8").roll();
