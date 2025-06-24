@@ -114,7 +114,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
 
     html.find(".apply-damage-button").on("click", async () => {
 
-    const actor = damageData.target;
+    const actor = game.actors.get(damageData.target._id);
     if (!actor) return ui.notifications.error("Актёр у токена не найден");
 
         const zone = damageData.zone;
