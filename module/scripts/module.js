@@ -570,151 +570,194 @@ async function Heal(actor) {
 }
 
 async function Attack(currentDifficulty, actor, damage, currentWeapon) {
-            if (!actor) return ui.notifications.warn("Выберите атакующего персонажа");
+  if (!actor) return ui.notifications.warn("Выберите атакующего персонажа");
 
-const userTarget = Array.from(game.user.targets)[0];
-if (!userTarget) ui.notifications.warn("Цель не выбрана");
+  const userTarget = Array.from(game.user.targets)[0];
+  if (!userTarget) return ui.notifications.warn("Цель не выбрана");
 
-const token = userTarget.document; // TokenDocument
-if (!token) ui.notifications.warn("Токен не найден");
+  const token = userTarget.document;
+  if (!token) return ui.notifications.warn("Токен не найден");
 
-const target = token.actor;
-if (!target) ui.notifications.warn("У токена нет актёра");
+  const target = token.actor;
+  if (!target) return ui.notifications.warn("У токена нет актёра");
 
-let targetFlags;
-if (token.actorLink) {
-  // Токен связан — безопасно использовать actorId
-  targetFlags = { actorId: target.id };
-} else {
-  // Несвязанный токен — используем tokenId и sceneId
-  targetFlags = {
-    tokenId: token.id,
-    sceneId: token.parent?.id ?? canvas.scene?.id
-  };
-}
-
-            console.log("Цель — токен:", target.name, target.actorLink ? "link" : "unlinked");
-
-            const damageTypes = {
-                slashing: "Рубящий",
-                piercing: "Колющий",
-                bludgeoning: "Дробящий"
-            };
-
-            let difficulty = Number(currentDifficulty);
-            const weapon = String(currentWeapon);
-
-            let html = `<form><div class="form-group">
-                <label>Атакующий: ${actor.name}</label><br>
-                <label>Часть тела:</label>
-                <select name="zone">`;
-            for (const [zone, penalty] of Object.entries(hitZones)) {
-                const label = healTranslations[zone] || zone;
-                html += `<option value="${zone}">${label} (Штраф: ${penalty})</option>`;
-            }
-            html += `</select></div><br>
-                <div class="form-group" style="border:1px solid black; border-radius: 8px">
-                <label>Тип урона:</label>
-                <select name="damageType">`;
-            for (const [type, label] of Object.entries(damageTypes)) {
-                html += `<option value="${type}">${label}</option>`;
-            }
-            html += `</select></div>
-                <div class="form-group">
-                <label>Урон:</label>
-                <input type="text" name="damage" value="${damage}" pattern="^(\\d+d\\d+(\\+\\d+)?|\\d+)$" title="Например: 2d6+3" /><br>
-                <label>Сложность:</label>
-                <input type="text" name="difficulty" value="${Math.max(1, difficulty)}" pattern="^([1-9]|[1-9][0-9])$" title="Например: 15" />
-                </div></form>`;
-
-            let zone, damageType, damageFormula;
-            try {
-                ({ zone, damageType, damage: damageFormula, difficulty } = await Dialog.prompt({
-                    title: "Выбор зоны и типа урона",
-                    content: html,
-                    label: "Атаковать",
-                    callback: html => ({
-                        zone: html.find("select[name='zone']").val(),
-                        damageType: html.find("select[name='damageType']").val(),
-                        damage: html.find("input[name='damage']").val(),
-                        difficulty: Number(html.find("input[name='difficulty']").val())
-                    })
-                }));
-            } catch {
-                return;
-            }
-
-
-            const zoneLabel = translations[zone] || zone;
-            const zoneLabelRaw = healTranslations[zone] || zone;
-            const penalty = Number(hitZones[zone] ?? 0);
-            
-            const roll = await new Roll("1d20").roll();
-            let rollResult = roll.total;
-            // 1) Бросок урона для отображения
-            const damageRoll = await new Roll(damageFormula).roll();
-            let damageRollResult = damageRoll.total;
-            let rollmessage = "";
-            let finalDifficulty = difficulty + penalty - Number(target.system.props.passiveDefence);
-            if (rollResult == 1) {
-                rollmessage = "Крит. попадание!"
-                const critRoll = await new Roll("1d8").roll();
-                let critRollResult = critRoll.total;
-                const effect = criticalEffects[critRollResult];
-                critRoll.toMessage({
-                    speaker: ChatMessage.getSpeaker(),
-                    flavor: `Критическое действие: ${effect?.label || "неизвестно"}${effect?.note ? `<br><i>${effect.note}</i>` : ""}`
-                });
-            }
-            else if(rollResult == 20) {
-                rollmessage = "Крит. промах!"
-            }
-            else if(rollResult <= finalDifficulty) {
-                rollmessage = "Попадание!";
-            }
-            else {
-                rollmessage = "Промах!";
-            }
-
-                roll.toMessage({
-                speaker: ChatMessage.getSpeaker(),
-                flavor: `Бросок на попадание: <b>${rollmessage}</b><br>Сложность: <b>${Math.max(1, finalDifficulty)}</b>` 
-            });
-            
-
-            // 2) Сообщение с флагом исходных данных (чтобы потом создать сообщение с кнопкой)
-            damageRoll.toMessage({
-                flavor: `
-                    ${rollmessage}<br>
-                    <b>${actor.name}</b> атакует <b>${target.name}</b> по <b>${zoneLabel}</b> с помощью <b>${weapon}</b> (нужно <= ${Math.max(1,finalDifficulty)}).<br>
-                    Попытка урона: <b>${damageRollResult}</b> (${damageFormula}) (${damageTypes[damageType]})<br><br>
-                    <div style="display: flex; gap: 5px; justify-content: center;">
-                        <button class="apply-damage-button" title="Урон" style="padding: 5px;">⚔️</button>
-                        <button class="apply-critical-button" title="Крит" style="padding: 5px;">🔥</button>
-                        <button class="apply-reset-button" disabled title="Отмена" style="padding: 5px;">🩹</button>
-                        <button class="apply-heal-button" title="Исцелить" style="padding: 5px;">❤️</button>
-                    </div>
-                `,
-                speaker: ChatMessage.getSpeaker(),
-flags: {
-  csbadditional: {
-    applyDamage: {
-      ...targetFlags,
-      attackerName: actor.name,
-      zone,
-      zoneLabel,
-      zoneLabelRaw,
-      amount: damageRollResult,
-      damageType,
-      difficulty: finalDifficulty,
-      originalFormula: damageFormula,
-      weapon
-    }
+  let targetFlags;
+  if (token.actorLink) {
+    targetFlags = { actorId: target.id };
+  } else {
+    targetFlags = {
+      tokenId: token.id,
+      sceneId: token.parent?.id ?? canvas.scene?.id
+    };
   }
-}
-            });
-            
-            console.log(zone, damageType, damageFormula, finalDifficulty);
+
+  const damageTypes = {
+    slashing: "Рубящий",
+    piercing: "Колющий",
+    bludgeoning: "Дробящий"
+  };
+
+  const throwDiceForm = `
+<form>
+  <div class="form-group">
+    <label>Сложность:</label>
+    <input type="number" name="difficulty" value="${Math.max(1, Number(currentDifficulty))}" />
+  </div>
+  <div class="form-group">
+    <label>Модификатор сложности:</label>
+    <input type="number" name="modificator" value="0" />
+  </div>
+  <div class="form-group">
+    <label>Тип броска:</label><br>
+    <label><input type="radio" name="mode" value="normal" checked /> Обычный</label>
+    <label><input type="radio" name="mode" value="advantage" /> Преимущество</label>
+    <label><input type="radio" name="mode" value="disadvantage" /> Помеха</label>
+  </div>
+  <div class="form-group">
+    <label>Количество бросков:</label>
+    <input type="number" name="count" value="1" min="1" />
+  </div>
+</form>`;
+
+  let throwParams;
+  try {
+    throwParams = await Dialog.prompt({
+      title: "Настройки броска атаки",
+      content: throwDiceForm,
+      label: "Продолжить",
+      callback: html => ({
+        difficulty: Number(html.find("input[name='difficulty']").val() || 0),
+        modificator: Number(html.find("input[name='modificator']").val() || 0),
+        mode: html.find("input[name='mode']:checked").val(),
+        count: Math.max(1, Number(html.find("input[name='count']").val() || 1))
+      })
+    });
+  } catch {
+    return;
+  }
+
+  const weapon = String(currentWeapon);
+  const baseDifficulty = throwParams.difficulty;
+  const modifier = throwParams.modificator;
+  const mode = throwParams.mode;
+  const count = throwParams.count;
+
+  const html = `
+    <form>
+      <div class="form-group">
+        <label>Атакующий: ${actor.name}</label><br>
+        <label>Часть тела:</label>
+        <select name="zone">
+          ${Object.entries(hitZones).map(([zone, penalty]) => {
+            const label = healTranslations[zone] || zone;
+            return `<option value="${zone}">${label} (Штраф: ${penalty})</option>`;
+          }).join("")}
+        </select>
+      </div><br>
+      <div class="form-group" style="border:1px solid black; border-radius: 8px">
+        <label>Тип урона:</label>
+        <select name="damageType">
+          ${Object.entries(damageTypes).map(([type, label]) =>
+            `<option value="${type}">${label}</option>`).join("")}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Урон:</label>
+        <input type="text" name="damage" value="${damage}" pattern="^(\\d+d\\d+(\\+\\d+)?|\\d+)$" />
+      </div>
+    </form>`;
+
+  let zone, damageType, damageFormula;
+  try {
+    ({ zone, damageType, damage: damageFormula } = await Dialog.prompt({
+      title: "Параметры атаки",
+      content: html,
+      label: "Атаковать",
+      callback: html => ({
+        zone: html.find("select[name='zone']").val(),
+        damageType: html.find("select[name='damageType']").val(),
+        damage: html.find("input[name='damage']").val()
+      })
+    }));
+  } catch {
+    return;
+  }
+
+  const zoneLabel = translations[zone] || zone;
+  const zoneLabelRaw = healTranslations[zone] || zone;
+  const penalty = Number(hitZones[zone] ?? 0);
+  const finalDifficulty = baseDifficulty + modifier + penalty - Number(target.system.props.passiveDefence);
+
+  let modeMessage = `<b>Обычный бросок</b>`;
+  let attackFormula = "1d20";
+  if (mode === "advantage") {
+    attackFormula = "2d20kh";
+    modeMessage = `<b style="color:darkgreen">Преимущество</b>`;
+  } else if (mode === "disadvantage") {
+    attackFormula = "2d20kl";
+    modeMessage = `<b style="color:darkred">Помеха</b>`;
+  }
+
+  for (let i = 0; i < count; i++) {
+    const roll = await new Roll(attackFormula).roll();
+    let rollResult = roll.total;
+    let rollmessage = "";
+    
+    if (rollResult === 1) {
+      rollmessage = "Крит. попадание!";
+      const critRoll = await new Roll("1d8").roll();
+      const effect = criticalEffects[critRoll.total];
+      await critRoll.toMessage({
+        speaker: ChatMessage.getSpeaker(),
+        flavor: `Критическое действие: ${effect?.label || "неизвестно"}${effect?.note ? `<br><i>${effect.note}</i>` : ""}`
+      });
+    } else if (rollResult === 20) {
+      rollmessage = "Крит. промах!";
+    } else if (rollResult <= finalDifficulty) {
+      rollmessage = "Попадание!";
+    } else {
+      rollmessage = "Промах!";
+    }
+
+    await roll.toMessage({
+      speaker: ChatMessage.getSpeaker(),
+      flavor: `${modeMessage}<br><b>Бросок на попадание:</b> ${rollmessage}<br>Сложность: <b>${Math.max(1, finalDifficulty)}</b>`
+    });
+
+    const damageRoll = await new Roll(damageFormula).roll();
+    const damageRollResult = damageRoll.total;
+
+    await damageRoll.toMessage({
+      speaker: ChatMessage.getSpeaker(),
+      flavor: `
+        ${rollmessage}<br>
+        <b>${actor.name}</b> атакует <b>${target.name}</b> по <b>${zoneLabel}</b> с помощью <b>${weapon}</b>.<br>
+        Попытка урона: <b>${damageRollResult}</b> (${damageFormula}) (${damageTypes[damageType]})<br><br>
+        <div style="display: flex; gap: 5px; justify-content: center;">
+          <button class="apply-damage-button" title="Урон" style="padding: 5px;">⚔️</button>
+          <button class="apply-critical-button" title="Крит" style="padding: 5px;">🔥</button>
+          <button class="apply-reset-button" disabled title="Отмена" style="padding: 5px;">🩹</button>
+          <button class="apply-heal-button" title="Исцелить" style="padding: 5px;">❤️</button>
+        </div>
+      `,
+      flags: {
+        csbadditional: {
+          applyDamage: {
+            ...targetFlags,
+            attackerName: actor.name,
+            zone,
+            zoneLabel,
+            zoneLabelRaw,
+            amount: damageRollResult,
+            damageType,
+            difficulty: finalDifficulty,
+            originalFormula: damageFormula,
+            weapon
+          }
+        }
+      }
+    });
+  }
 }
 
 async function CreateBody(actor) {
