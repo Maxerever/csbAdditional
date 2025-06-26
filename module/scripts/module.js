@@ -798,5 +798,3 @@ async function getActorFromData(data) {
   }
   return null;
 }
-
-// Остальные системы (AttackSystem, BodySystem, DiceSystem) остаются без изменений
