@@ -369,9 +369,9 @@ class AttackSystem {
 
     // Выполнение бросков
     for (let i = 0; i < throwParams.count; i++) {
-      const roll = await this.rollAttack(throwParams.mode, finalDifficulty);
+      const roll = await AttackSystem.rollAttack(throwParams.mode, finalDifficulty);
       if (roll.isSuccess) {
-        await this.applyAttackResult(actor, target, {
+        await AttackSystem.applyAttackResult(actor, target, {
           ...targetFlags,
           weapon: currentWeapon,
           zone,
@@ -489,7 +489,7 @@ class BodySystem {
                 { fullBody: "all", partBody: "foots", parts: "rightFoot", percent: 0.05, hp_percent: fullHp * 0.05, condition: "normal", DR: 0 }
             ];
 
-    await this.addRowsToDynamicTable(actor, "system_hp_dr", newRows);
+    await BodySystem.addRowsToDynamicTable(actor, "system_hp_dr", newRows);
     ui.notifications.info("Созданы части тела для персонажа");
   }
 
