@@ -1,8 +1,8 @@
 {
   "id": "csbadditional",
-  "title": "Помощь Кириллиусу Нозиллиусу",
+  "title": "Помощь себе самому",
   "description": "Заебок",
-  "version": "2.0",
+  "version": "3.0",
   "authors": [
     {
       "name": "Крестьянин обыкновенный",
@@ -16,10 +16,8 @@
     "minimum": "12",
     "verified": "12"
   },
-  "scripts": [
-    "module/scripts/module.js"
-  ],
-  "esmodules": [],
+  "scripts": [],
+  "esmodules": ["module/scripts/module.js"],
   "styles": [
     "module/styles/csbAdditionalCss.css"
   ],
